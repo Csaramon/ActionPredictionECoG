@@ -1,8 +1,5 @@
-
-*.mat
-*.nii
-*.gz
 *.DS_Store
+/Atlas/*
 /Data/*
 /Results/*
 /papers/*
