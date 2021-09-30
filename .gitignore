@@ -1,0 +1,7 @@
+
+*.mat
+*.nii
+*.gz
+Atlas/.DS_Store
+Atlas/JuBrain_ROIs/.DS_Store
+.DS_Store
