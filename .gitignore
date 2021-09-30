@@ -3,3 +3,6 @@
 *.nii
 *.gz
 *.DS_Store
+/Data/*
+/Results/*
+/papers/*
