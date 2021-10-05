@@ -2,23 +2,35 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'Granger';
+    calculate = 'Granger'
 end
 
-% initialize fieldtrip toolbox
-addpath('/data00/Chaoyi/toolbox/tools')
-addpath('/data00/Chaoyi/toolbox/fieldtrip-20210418/')
-ft_defaults
+% initialize base path and toolbox
+if strcmpi(computer,'PCWIN64')
+    addpath('C:\Users\qin2\Documents\MATLAB\toolbox')
+    addpath('C:\Users\qin2\Documents\MATLAB\toolbox\fieldtrip-20210418')
+    basePath = 'C:\Users\qin2\Documents\ActionPrediction\';
+    
+elseif strcmpi(computer,'MACI64')
+    addpath('~/Desktop/ActionPrediction')
+    addpath('C:\Users\qin2\Documents\MATLAB\toolbox\fieldtrip-20210418')
+    basePath = '~/Desktop/ActionPrediction/';
+elseif strcmpi(computer,'GLNXA64')
+    addpath('/data00/Chaoyi/ActionPredictionECoG/')
+    addpath('/data00/Chaoyi/toolbox/fieldtrip-20210418/')
+    basePath = '/data00/Chaoyi/ActionPredictionECoG/';
+end
 
+resultPath = [basePath 'Results' filesep];
+
+ft_defaults
 
 allsub = {'Patient1','Patient2','Patient3','Patient4','Patient6', ...
     'Patient8','Patient9','Patient11','Patient12','Patient13'}; % all sub
-basePath = '/data00/Chaoyi/ActionPrediction/';
-resultPath = [basePath 'Results/'];
 
 
 
-%% -------- ROI Npairtion --------
+%% -------- ROI Partition --------
 
 % Region of Interest include:
 ROIIndex = {[1,2],[49,50],[51,52],[53,54],[59,60],[61,62],[63,64],[1],[1]};
@@ -114,7 +126,7 @@ for iseed = seedIndex
         
         for isub = 1:numel(allsub)%[1,3,4,6,7,8,9,10]%1:numel(allsub)
             subname = allsub{isub};
-            subPath = [basePath subname filesep];
+            subPath = [basePath filesep 'Data' filesep subname filesep];
             dataPath = [subPath filesep 'Analysis' filesep];
             fprintf(['\n Currently calculating subject: ' subname])
             
@@ -811,6 +823,10 @@ for iseed = seedIndex
             
             if strcmp(calculate,'mvgc')
                 
+                % initialize MVGC toolbox
+                run /data00/Chaoyi/toolbox/tools/mvgc_v1.0/startup.m
+                
+                % time window use to calculate
                 timeWin = [0 1]; % unit in second
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -955,7 +971,7 @@ for iseed = seedIndex
             if strcmp(calculate,'Granger')
                 
                 p=0.05; % threshold for IVC
-                timeWin = [0 0.5]; % unit in second
+                timeWin = [0 1]; % unit in second
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1034,7 +1050,7 @@ for iseed = seedIndex
                         
                         % calculate multivariate autoregressive model
                         cfg         = [];
-                        cfg.order   = 10;
+                        cfg.order   = 20;
                         cfg.toolbox = 'bsmart';
                         cfg.channel = [iseedElec,isearchElec];
                         mdata       = ft_mvaranalysis(cfg, trlDataM);
@@ -1082,7 +1098,7 @@ for iseed = seedIndex
                         
                         % calculate multivariate autoregressive model
                         cfg         = [];
-                        cfg.order   = 10;
+                        cfg.order   = 20;
                         cfg.toolbox = 'bsmart';
                         cfg.channel = [iseedElec,isearchElec];
                         mdata       = ft_mvaranalysis(cfg, trlDataS);

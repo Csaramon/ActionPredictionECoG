@@ -2,7 +2,7 @@ function varargout = parallelCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'MPD';
+    calculate = 'MPD'
 end
 
 % initialize base path and toolbox
@@ -15,6 +15,10 @@ elseif strcmpi(computer,'MACI64')
     addpath('~/Desktop/ActionPrediction')
     addpath('C:\Users\qin2\Documents\MATLAB\toolbox\fieldtrip-20210418')
     basePath = '~/Desktop/ActionPrediction/';
+elseif strcmpi(computer,'GLNXA64')
+    addpath('/data00/Chaoyi/ActionPredictionECoG/')
+    addpath('/data00/Chaoyi/toolbox/fieldtrip-20210418/')
+    basePath = '/data00/Chaoyi/ActionPredictionECoG/';
 end
 
 resultPath = [basePath 'Results' filesep];
@@ -26,7 +30,7 @@ allsub = {'Patient1','Patient2','Patient3','Patient4','Patient6', ...
 
 for isub = 1:numel(allsub)
     subname = allsub{isub};
-    subPath = [basePath subname filesep];
+    subPath = [basePath filesep 'Data' filesep subname filesep];
     dataPath = [subPath filesep 'Analysis' filesep];
     fprintf(['\n Currently calculating subject: ' subname])
     

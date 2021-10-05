@@ -5,17 +5,31 @@ if nargin < 1
     calculate = 'BPall'
 end
 
-% initialize fieldtrip toolbox
-addpath('/data00/Chaoyi/toolbox/tools')
-addpath('/data00/Chaoyi/toolbox/fieldtrip-20210418/')
-ft_defaults
+% initialize base path and toolbox
+if strcmpi(computer,'PCWIN64')
+    addpath('C:\Users\qin2\Documents\MATLAB\toolbox')
+    addpath('C:\Users\qin2\Documents\MATLAB\toolbox\fieldtrip-20210418')
+    basePath = 'C:\Users\qin2\Documents\ActionPrediction\';
+    
+elseif strcmpi(computer,'MACI64')
+    addpath('~/Desktop/ActionPrediction')
+    addpath('C:\Users\qin2\Documents\MATLAB\toolbox\fieldtrip-20210418')
+    basePath = '~/Desktop/ActionPrediction/';
+elseif strcmpi(computer,'GLNXA64')
+    addpath('/data00/Chaoyi/ActionPredictionECoG/')
+    addpath('/data00/Chaoyi/toolbox/fieldtrip-20210418/')
+    basePath = '/data00/Chaoyi/ActionPredictionECoG/';
+end
 
+resultPath = [basePath 'Results' filesep];
+
+ft_defaults
 
 allsub = {'Patient1','Patient2','Patient3','Patient4','Patient6', ...
     'Patient8','Patient9','Patient11','Patient12','Patient13'}; % all sub
-basePath = '/data00/Chaoyi/ActionPrediction/';
-resultPath = [basePath 'Results/'];
 
+
+%% -------- ROI Partition --------
 
 % Region of Interest include:
 ROIIndex = {[1,2],[49,50],[51,52],[53,54],[59,60],[61,62],[63,64],[1],[1]};
@@ -40,9 +54,6 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-
-
-%% -------- ROI selection --------
 
 for iatlas = [1,3,7,8,9]%1:numel(ROIIndex) %[1,3,7,8,9]
     
