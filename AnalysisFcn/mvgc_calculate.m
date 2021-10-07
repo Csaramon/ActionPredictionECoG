@@ -2,12 +2,14 @@
 
 % ntrials   = size(data2calM,3);     % number of trials
 % nobs      = size(data2calM,2);   % number of observations per trial
+ntrials   = size(X,3);     % number of trials
+nobs      = size(X,2);   % number of observations per trial
 
 regmode   = 'OLS';  % VAR model estimation regression mode ('OLS', 'LWR' or empty for default)
 icregmode = 'LWR';  % information criteria regression mode ('OLS', 'LWR' or empty for default)
 
 morder    = 'AIC';  % model order to use ('actual', 'AIC', 'BIC' or supplied numerical value)
-momax     = 50;     % maximum model order for model order estimation
+momax     = 20;     % maximum model order for model order estimation
 
 AT = [];
 acmaxlags = [];   % maximum autocovariance lags (empty for automatic calculation)
@@ -17,7 +19,7 @@ alpha     = 0.05;   % significance level for significance test
 mhtc      = 'FDR';  % multiple hypothesis test correction (see routine 'significance')
 
 fs        = 500;    % sample rate (Hz)
-fres      = [];     % frequency resolution (empty for automatic calculation)
+fres      = 500;     % frequency resolution (empty for automatic calculation)
 
 seed      = 0;      % random seed (0 for unseeded)
 
@@ -151,8 +153,9 @@ ptoc;
 
 if all(isnan(f(:))) | isempty(f)
     G = [];
+    morder = morder-1;
 end
 
 
-morder = morder-1;
+
 end

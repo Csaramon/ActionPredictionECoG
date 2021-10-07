@@ -38,10 +38,12 @@ allsub = {'Patient1','Patient2','Patient3','Patient4','Patient6', ...
 % ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'InferiorOccipitalGyrus','SuperiorParietalLobe','InferiorParietalLobe','SupraMarginal','BA44','PFt'};
 
-% Anatomy20 ROIS
+Anatomy20 ROIS
 ROIIndex = {[198],[209],[128],[181],[135]};
-ROIAtlas = {'Anatomy_v20.nii','Anatomy_v20.nii','Anatomy_v20.nii','Anatomy_v20.nii','Anatomy_v20.nii'};
-ROIText = {'V1','V2','V3','V4','V5'};
+ROIAtlas = {'Anatomy_v20.nii','Anatomy_v20.nii','fsAnatomyMacro.nii','fsAnatomyMacro.nii', ...
+    'fsAnatomyMacro.nii','fsAnatomyMacro.nii','fsAnatomyMacro.nii','fsAnatomyMacro.nii','fsAnatomyMacro.nii','BA44.nii','PFt.nii'};
+ROIText = {'Precentral','SuperiorFrontalGyrus','SuperiorOccipitalGyrus','MiddleOccipitalGyrus', ...
+    'InferiorOccipitalGyrus','Postcentral','SuperiorParietalLobe','InferiorParietalLobe','SupraMarginal','BA44','PFt'};
 
 
 % ROIIndex = {[1008,2008],[1029,2029],[1031,2031],[1022,2022],[1024,2024], ...
@@ -53,7 +55,7 @@ ROIText = {'V1','V2','V3','V4','V5'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
 
-for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
+for iatlas = [1,3,7,8,9]%1:numel(ROIIndex) %[1,3,7,8,9]
     
     % load altlas infomation
     aparc_nii = load_nifti([basePath 'Atlas' filesep ROIAtlas{iatlas}]);
@@ -1149,19 +1151,17 @@ for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
     if strcmp(calculate,'BP') | strcmp(calculate,'BPall')
         CondIndexM = ones(size(subIndexM));
         CondIndexS = 2*ones(size(subIndexS));
-        allMetricM = squeeze(allMetricM);
-        allMetricS = squeeze(allMetricS);
+
         
-        tMap = zeros(1,size(allMetricM,2));
-        pMap = zeros(1,size(allMetricM,2));
-        y2plot = zeros(2,size(allMetricM,2));
-        y2raw = zeros(2,size(allMetricM,2));
-        se2plot = zeros(2,size(allMetricM,2));
+        tMap = zeros(1,size(allMetricS,2));
+        pMap = zeros(1,size(allMetricS,2));
+        y2plot = zeros(2,size(allMetricS,2));
+        se2plot = zeros(2,size(allMetricS,2));
         
         strlen = 0;
         % TFR point wise LME
         
-        for itime = 1:size(allMetricM,2)
+        for itime = 1:size(allMetricS,2)
             
             s = ['Calculating tf point: ' num2str(itime) '/' num2str(size(allMetricS,2)) 'times'];
             strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
@@ -1191,15 +1191,13 @@ for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
             obsVal1 = Ycorr(lmeTBL.Cond=='1');
             obsVal2 = Ycorr(lmeTBL.Cond=='2');
             y2plot(:,itime) = [nanmean(obsVal1);nanmean(obsVal2)];
-            y2raw(:,itime) = [mean(lmeTBL.Y(lmeTBL.Cond=='1')),mean(lmeTBL.Y(lmeTBL.Cond=='2'))];
             se2plot(:,itime) = [nanstd(obsVal1)./sqrt(numel(obsVal1));nanstd(obsVal2)./sqrt(numel(obsVal2))];
         end
         
         if ~exist([resultPath calculate filesep ROIAtlas{1}(1:end-4)],'file')
             mkdir([resultPath calculate filesep ROIAtlas{1}(1:end-4)])
         end
-        save([resultPath calculate filesep ROIAtlas{1}(1:end-4) filesep ROIText{iatlas}], ...
-            'lmeTBL','tMap','pMap','y2plot','se2plot','y2raw','Para');
+        save([resultPath calculate filesep ROIAtlas{1}(1:end-4) filesep ROIText{iatlas}],'lmeTBL','tMap','pMap','y2plot','se2plot','Para');
 
         
     end
