@@ -661,7 +661,7 @@ for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
             Para.freq = freqM.freq;
             nelec = nelec+numel(ROIelec);
         end
-        
+         
         
         %% section5: calculate band power %%
         %%%%%%%%%%%%%%%%%%%%%%%%
