@@ -2,14 +2,14 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'Granger'
+    calculate = 'mvgc'
 end
 
 % initialize base path and toolbox
 if strcmpi(computer,'PCWIN64')
     addpath('C:\Users\qin2\Documents\MATLAB\toolbox')
     addpath('C:\Users\qin2\Documents\MATLAB\toolbox\fieldtrip-20210418')
-    basePath = 'C:\Users\qin2\Documents\ActionPrediction\';
+    basePath = 'C:\Users\qin2\Documents\ActionPredictionECoG\';
     
 elseif strcmpi(computer,'MACI64')
     addpath('~/Desktop/ActionPrediction')
@@ -48,17 +48,17 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1 3 7];
-searchIndex = [1 3 7];
-icontrol = [7];
-allPair = nchoosek(seedIndex,2);
+seedIndex = [3];
+searchIndex = [7];
+icontrol = [1];
+% allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
     for isearch = searchIndex
         
 %                 skip redundant pairs
-                if ~ismember([iseed,isearch],allPair,'rows')
-                    continue
-                end
+%                 if ~ismember([iseed,isearch],allPair,'rows')
+%                     continue
+%                 end
         
         if iseed==isearch
             continue
@@ -849,8 +849,11 @@ for iseed = seedIndex
             if strcmp(calculate,'mvgc')
                 
                 % initialize MVGC toolbox
+                try
                 run /data00/Chaoyi/toolbox/tools/mvgc_v1.0/startup.m
-                
+                catch
+                run C:\Users\qin2\Documents\MATLAB\toolbox\tools\mvgc_v1.0\startup.m
+                end
                 % time window use to calculate
                 timeWin = [0 1]; % unit in second
                 
@@ -877,7 +880,7 @@ for iseed = seedIndex
                 controlElec = unique(it);
                 
                 % skip if no electrode pair
-                if ~any(seedElec) | ~any(searchElec)
+                if ~any(seedElec) | ~any(searchElec) | isempty(setdiff(seedElec,searchElec))
                     continue
                 end
                 
@@ -895,12 +898,7 @@ for iseed = seedIndex
                 
                 badChanInd = trlData.trial{1,1}(controlElec,1)==0;
                 controlElec(badChanInd) = [];
-                
-                % skip if no electrode pair
-                if ~any(seedElec) | ~any(searchElec) | isempty(setdiff(seedElec,searchElec))
-                    continue
-                end
-                
+                                
                 % remove superimposed electrodes
                 duplicateInd = intersect(searchElec,seedElec);
                 if ~isempty(duplicateInd)
