@@ -667,7 +667,7 @@ for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
         %%%%%%%%%%%%%%%%%%%%%%%%
         if strcmp(calculate,'BP')
             
-            freqRange = [60 120];
+            freqRange = [20 30];
             
             %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1256,5 +1256,5 @@ for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
     
 end
 
-varargout{1} = toc;
+varargout{1} = toc/3600;
 

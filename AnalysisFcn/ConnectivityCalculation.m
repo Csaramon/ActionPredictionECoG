@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'mvgc'
+    calculate = 'Granger'
 end
 
 % initialize base path and toolbox
@@ -48,17 +48,17 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1];
-searchIndex = [7];
-icontrol = [3];
-% allPair = nchoosek(seedIndex,2);
+seedIndex = [1 3 7];
+searchIndex = [1 3 7];
+icontrol = [7];
+allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
     for isearch = searchIndex
         
-        %         skip redundant pairs
-%         if ~ismember([iseed,isearch],allPair,'rows')
-%             continue
-%         end
+%                 skip redundant pairs
+                if ~ismember([iseed,isearch],allPair,'rows')
+                    continue
+                end
         
         if iseed==isearch
             continue
@@ -109,7 +109,7 @@ for iseed = seedIndex
         search_coordiantes = ras_coordiantes;
         
         
-               % load altlas infomation for Control roi
+        % load altlas infomation for Control roi
         aparc_nii = load_nifti([basePath 'Atlas' filesep ROIAtlas{icontrol}]);
         aparc_vol = round(aparc_nii.vol);
         allroi_index = [];
@@ -875,7 +875,7 @@ for iseed = seedIndex
                 tempdev = pdist2(elecposMNI,control_coordiantes);
                 [it,~] = find(tempdev <=roiDist);
                 controlElec = unique(it);
-
+                
                 % skip if no electrode pair
                 if ~any(seedElec) | ~any(searchElec)
                     continue
@@ -892,6 +892,9 @@ for iseed = seedIndex
                 
                 badChanInd = trlData.trial{1,1}(searchElec,1)==0;
                 searchElec(badChanInd) = [];
+                
+                badChanInd = trlData.trial{1,1}(controlElec,1)==0;
+                controlElec(badChanInd) = [];
                 
                 % skip if no electrode pair
                 if ~any(seedElec) | ~any(searchElec) | isempty(setdiff(seedElec,searchElec))
@@ -936,51 +939,51 @@ for iseed = seedIndex
                 for iseedElec = seedElec'
                     for isearchElec = searchElec'
                         for icontrolElec = controlElec'
-                        allChanCmb = [allChanCmb;[iseedElec,isearchElec]];
-                        % Matched Condition
-                        
-                        X = [];
-                        for itrl = 1:numel(trlDataM.trial)
-                            X(:,:,itrl) = trlDataM.trial{itrl}([iseedElec,isearchElec,icontrolElec],time2cal);
-                        end
-                        
-                        mvgc_calculate % calculate granger causality
-                        FM = f;
-                        allGrangerM(Npair,:) = squeeze((FM(2,1,:)-FM(1,2,:))./ ...
-                            (FM(1,2,:)+FM(2,1,:)))';
-                        
-                        % Scrambled Condition
-                        
-                        X = [];
-                        for itrl = 1:numel(trlDataS.trial)
-                            X(:,:,itrl) = trlDataS.trial{itrl}([iseedElec,isearchElec,icontrolElec],time2cal);
-                        end
-                        
-                        mvgc_calculate % calculate granger causality
-                        FS = f;
-                        fres = size(f,3)-1;
-                        freqPoints = sfreqs(fres,fs)';
-                        
-                        allGrangerS(Npair,:) = squeeze((FS(2,1,:)-FS(1,2,:))./ ...
-                            (FS(1,2,:)+FS(2,1,:)))';
-                        
-                        
-                        
-                        % count for pairs of eletrodes
-                        Npair = Npair + 1;
+                            allChanCmb = [allChanCmb;[iseedElec,isearchElec]];
+                            % Matched Condition
+                            
+                            X = [];
+                            for itrl = 1:numel(trlDataM.trial)
+                                X(:,:,itrl) = trlDataM.trial{itrl}([iseedElec,isearchElec,icontrolElec],time2cal);
+                            end
+                            
+                            mvgc_calculate % calculate granger causality
+                            FM = f;
+                            allGrangerM(Npair,:) = squeeze((FM(2,1,:)-FM(1,2,:))./ ...
+                                (FM(1,2,:)+FM(2,1,:)))';
+                            
+                            % Scrambled Condition
+                            
+                            X = [];
+                            for itrl = 1:numel(trlDataS.trial)
+                                X(:,:,itrl) = trlDataS.trial{itrl}([iseedElec,isearchElec,icontrolElec],time2cal);
+                            end
+                            
+                            mvgc_calculate % calculate granger causality
+                            FS = f;
+                            fres = size(f,3)-1;
+                            freqPoints = sfreqs(fres,fs)';
+                            
+                            allGrangerS(Npair,:) = squeeze((FS(2,1,:)-FS(1,2,:))./ ...
+                                (FS(1,2,:)+FS(2,1,:)))';
+                            
+                            
+                            
+                            % count for pairs of eletrodes
+                            Npair = Npair + 1;
                         end
                     end
                 end
                 
                 
-               % generate index for Subject Electrode and Trial
+                % generate index for Subject Electrode and Trial
                 
-%                 elecIndexM =  cat(1,elecIndexM,isub*1000+allChanCmb);
-                                elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-2]');
+                %                 elecIndexM =  cat(1,elecIndexM,isub*1000+allChanCmb);
+                elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-2]');
                 subIndexM = cat(1,subIndexM,repmat(isub,Npair-1,1));
                 
-%                 elecIndexS = cat(1,elecIndexS,isub*1000+allChanCmb);
-                                elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-2]');
+                %                 elecIndexS = cat(1,elecIndexS,isub*1000+allChanCmb);
+                elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-2]');
                 subIndexS = cat(1,subIndexS,repmat(isub,Npair-1,1));
                 
                 % concontenate all trial responses in chosen ROI
@@ -1002,7 +1005,7 @@ for iseed = seedIndex
             if strcmp(calculate,'Granger')
                 
                 p=0.05; % threshold for IVC
-                timeWin = [0 1]; % unit in second
+                timeWin = [-0.5 0]; % unit in second
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1079,97 +1082,97 @@ for iseed = seedIndex
                         allChanCmb = [allChanCmb;[iseedElec,isearchElec]];
                         % Matched Condition
                         
-                        % calculate multivariate autoregressive model
-                        cfg         = [];
-                        cfg.order   = 20;
-                        cfg.toolbox = 'bsmart';
-                        cfg.channel = [iseedElec,isearchElec];
-                        mdata       = ft_mvaranalysis(cfg, trlDataM);
-                        % calculate spectral transfer function
-                        cfg        = [];
-                        cfg.method = 'mvar';
-                        mfreq      = ft_freqanalysis(cfg, mdata);
-                        % calculate granger index
-                        cfg            = [];
-                        cfg.method     = 'granger';
-                        grangerM             = ft_connectivityanalysis(cfg, mfreq);
-                        if strcmp(trlData.label(iseedElec),grangerM.label(1))
-                            allGrangerM(Npair,:) = squeeze((grangerM.grangerspctrm(1,2,:)-grangerM.grangerspctrm(2,1,:))./ ...
-                                (grangerM.grangerspctrm(1,2,:)+grangerM.grangerspctrm(2,1,:)))';
-                            
-                        elseif strcmp(trlData.label(iseedElec),grangerM.label(2))
-                            allGrangerM(Npair,:) = squeeze((grangerM.grangerspctrm(2,1,:)-grangerM.grangerspctrm(1,2,:))./ ...
-                                (grangerM.grangerspctrm(1,2,:)+grangerM.grangerspctrm(2,1,:)))';
-                        end
+%                         % calculate multivariate autoregressive model
+%                         cfg         = [];
+%                         cfg.order   = 20;
+%                         cfg.toolbox = 'bsmart';
+%                         cfg.channel = [iseedElec,isearchElec];
+%                         mdata       = ft_mvaranalysis(cfg, trlDataM);
+%                         % calculate spectral transfer function
+%                         cfg        = [];
+%                         cfg.method = 'mvar';
+%                         mfreq      = ft_freqanalysis(cfg, mdata);
+%                         % calculate granger index
+%                         cfg            = [];
+%                         cfg.method     = 'granger';
+%                         grangerM             = ft_connectivityanalysis(cfg, mfreq);
+%                         if strcmp(trlData.label(iseedElec),grangerM.label(1))
+%                             allGrangerM(Npair,:) = squeeze((grangerM.grangerspctrm(1,2,:)-grangerM.grangerspctrm(2,1,:))./ ...
+%                                 (grangerM.grangerspctrm(1,2,:)+grangerM.grangerspctrm(2,1,:)))';
+%                             
+%                         elseif strcmp(trlData.label(iseedElec),grangerM.label(2))
+%                             allGrangerM(Npair,:) = squeeze((grangerM.grangerspctrm(2,1,:)-grangerM.grangerspctrm(1,2,:))./ ...
+%                                 (grangerM.grangerspctrm(1,2,:)+grangerM.grangerspctrm(2,1,:)))';
+%                         end
                         
-                        %                         cfg = [];
-                        %                         cfg.method = 'mtmfft';
-                        %                         cfg.output = 'fourier';
-                        %                         cfg.channel = [iseedElec,isearchElec];
-                        %                         cfg.tapsmofrq = 2;
-                        %                         freqdataM = ft_freqanalysis(cfg, trlDataM);
-                        %
-                        %                         grangercfg = [];
-                        %                         grangercfg.method  = 'granger';
-                        %                         grangercfg.granger.conditional = 'no';
-                        %                         grangercfg.granger.sfmethod = 'bivariate';
-                        %
-                        %                         grangerM      = ft_connectivityanalysis(grangercfg, freqdataM);
-                        %
-                        %                         if strncmp(trlData.label{iseedElec},grangerM.labelcmb(1),length(trlData.label{iseedElec}))
-                        %                             allGrangerM(Npair,:) = squeeze((grangerM.grangerspctrm(1,:)-grangerM.grangerspctrm(2,:))./ ...
-                        %                                 (grangerM.grangerspctrm(1,:)+grangerM.grangerspctrm(2,:)))';
-                        %                         elseif strncmp(trlData.label{iseedElec},grangerM.labelcmb(2),length(trlData.label{iseedElec}))
-                        %                             allGrangerM(Npair,:) = squeeze((grangerM.grangerspctrm(2,:)-grangerM.grangerspctrm(1,:))./ ...
-                        %                                 (grangerM.grangerspctrm(1,:)+grangerM.grangerspctrm(2,:)))';
-                        %                         end
+                                                cfg = [];
+                                                cfg.method = 'mtmfft';
+                                                cfg.output = 'fourier';
+                                                cfg.channel = [iseedElec,isearchElec];
+                                                cfg.tapsmofrq = 5;
+                                                freqdataM = ft_freqanalysis(cfg, trlDataM);
+                        
+                                                grangercfg = [];
+                                                grangercfg.method  = 'granger';
+                                                grangercfg.granger.conditional = 'no';
+                                                grangercfg.granger.sfmethod = 'bivariate';
+                        
+                                                grangerM      = ft_connectivityanalysis(grangercfg, freqdataM);
+                        
+                                                if strncmp(trlData.label{iseedElec},grangerM.labelcmb(1),length(trlData.label{iseedElec}))
+                                                    allGrangerM(Npair,:) = squeeze((grangerM.grangerspctrm(1,:)-grangerM.grangerspctrm(2,:))./ ...
+                                                        (grangerM.grangerspctrm(1,:)+grangerM.grangerspctrm(2,:)))';
+                                                elseif strncmp(trlData.label{iseedElec},grangerM.labelcmb(2),length(trlData.label{iseedElec}))
+                                                    allGrangerM(Npair,:) = squeeze((grangerM.grangerspctrm(2,:)-grangerM.grangerspctrm(1,:))./ ...
+                                                        (grangerM.grangerspctrm(1,:)+grangerM.grangerspctrm(2,:)))';
+                                                end
                         
                         
                         % Scrambled Condition
                         
-                        % calculate multivariate autoregressive model
-                        cfg         = [];
-                        cfg.order   = 20;
-                        cfg.toolbox = 'bsmart';
-                        cfg.channel = [iseedElec,isearchElec];
-                        mdata       = ft_mvaranalysis(cfg, trlDataS);
-                        % calculate spectral transfer function
-                        cfg        = [];
-                        cfg.method = 'mvar';
-                        mfreq      = ft_freqanalysis(cfg, mdata);
-                        % calculate granger index
-                        cfg            = [];
-                        cfg.method     = 'granger';
-                        grangerS             = ft_connectivityanalysis(cfg, mfreq);
-                        if strcmp(trlData.label(iseedElec),grangerS.label(1))
-                            allGrangerS(Npair,:) = squeeze((grangerS.grangerspctrm(1,2,:)-grangerS.grangerspctrm(2,1,:))./ ...
-                                (grangerS.grangerspctrm(1,2,:)+grangerS.grangerspctrm(2,1,:)))';
-                            
-                        elseif strcmp(trlData.label(iseedElec),grangerS.label(2))
-                            allGrangerS(Npair,:) = squeeze((grangerS.grangerspctrm(2,1,:)-grangerS.grangerspctrm(1,2,:))./ ...
-                                (grangerS.grangerspctrm(1,2,:)+grangerS.grangerspctrm(2,1,:)))';
-                        end
-                        %                         cfg = [];
-                        %                         cfg.method = 'mtmfft';
-                        %                         cfg.output = 'fourier';
-                        %                         cfg.channel = [iseedElec,isearchElec];
-                        %                         cfg.tapsmofrq = 2;
-                        %                         freqdataS = ft_freqanalysis(cfg, trlDataS);
-                        %
-                        %                         grangercfg = [];
-                        %                         grangercfg.method  = 'granger';
-                        %                         grangercfg.granger.conditional = 'no';
-                        %                         grangercfg.granger.sfmethod = 'bivariate';
-                        %
-                        %                         grangerS      = ft_connectivityanalysis(grangercfg, freqdataS);
-                        %
-                        %                         if strncmp(trlData.label{iseedElec},grangerS.labelcmb(1),length(trlData.label{iseedElec}))
-                        %                             allGrangerS(Npair,:) = squeeze((grangerS.grangerspctrm(1,:)-grangerS.grangerspctrm(2,:))./ ...
-                        %                                 (grangerS.grangerspctrm(1,:)+grangerS.grangerspctrm(2,:)))';
-                        %                         elseif strncmp(trlData.label{iseedElec},grangerS.labelcmb(2),length(trlData.label{iseedElec}))
-                        %                             allGrangerS(Npair,:) = squeeze((grangerS.grangerspctrm(2,:)-grangerS.grangerspctrm(1,:))./ ...
-                        %                                 (grangerS.grangerspctrm(1,:)+grangerS.grangerspctrm(2,:)))';
-                        %                         end
+%                         % calculate multivariate autoregressive model
+%                         cfg         = [];
+%                         cfg.order   = 20;
+%                         cfg.toolbox = 'bsmart';
+%                         cfg.channel = [iseedElec,isearchElec];
+%                         mdata       = ft_mvaranalysis(cfg, trlDataS);
+%                         % calculate spectral transfer function
+%                         cfg        = [];
+%                         cfg.method = 'mvar';
+%                         mfreq      = ft_freqanalysis(cfg, mdata);
+%                         % calculate granger index
+%                         cfg            = [];
+%                         cfg.method     = 'granger';
+%                         grangerS             = ft_connectivityanalysis(cfg, mfreq);
+%                         if strcmp(trlData.label(iseedElec),grangerS.label(1))
+%                             allGrangerS(Npair,:) = squeeze((grangerS.grangerspctrm(1,2,:)-grangerS.grangerspctrm(2,1,:))./ ...
+%                                 (grangerS.grangerspctrm(1,2,:)+grangerS.grangerspctrm(2,1,:)))';
+%                             
+%                         elseif strcmp(trlData.label(iseedElec),grangerS.label(2))
+%                             allGrangerS(Npair,:) = squeeze((grangerS.grangerspctrm(2,1,:)-grangerS.grangerspctrm(1,2,:))./ ...
+%                                 (grangerS.grangerspctrm(1,2,:)+grangerS.grangerspctrm(2,1,:)))';
+%                         end
+                                                cfg = [];
+                                                cfg.method = 'mtmfft';
+                                                cfg.output = 'fourier';
+                                                cfg.channel = [iseedElec,isearchElec];
+                                                cfg.tapsmofrq = 5;
+                                                freqdataS = ft_freqanalysis(cfg, trlDataS);
+                        
+                                                grangercfg = [];
+                                                grangercfg.method  = 'granger';
+                                                grangercfg.granger.conditional = 'no';
+                                                grangercfg.granger.sfmethod = 'bivariate';
+                        
+                                                grangerS      = ft_connectivityanalysis(grangercfg, freqdataS);
+                        
+                                                if strncmp(trlData.label{iseedElec},grangerS.labelcmb(1),length(trlData.label{iseedElec}))
+                                                    allGrangerS(Npair,:) = squeeze((grangerS.grangerspctrm(1,:)-grangerS.grangerspctrm(2,:))./ ...
+                                                        (grangerS.grangerspctrm(1,:)+grangerS.grangerspctrm(2,:)))';
+                                                elseif strncmp(trlData.label{iseedElec},grangerS.labelcmb(2),length(trlData.label{iseedElec}))
+                                                    allGrangerS(Npair,:) = squeeze((grangerS.grangerspctrm(2,:)-grangerS.grangerspctrm(1,:))./ ...
+                                                        (grangerS.grangerspctrm(1,:)+grangerS.grangerspctrm(2,:)))';
+                                                end
                         
                         
                         % count for pairs of eletrodes
@@ -1535,7 +1538,7 @@ for iseed = seedIndex
         end
         
         
-      
+        
         %% section4: calculate Granger causality (LMEM) %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if strcmp(calculate,'Granger') | strcmp(calculate,'mvgc')
@@ -1570,21 +1573,21 @@ for iseed = seedIndex
                 frameDataS = double(squeeze(allMetricS(:,ifreq)));
                 
                 
-                                lmeTBL = table([frameDataM;frameDataS],[CondIndexM;CondIndexS],[subIndexM;subIndexS], ...
-                                    [elecIndexM;elecIndexS], 'VariableNames',{'Y','Cond','Sub','Elec'});
-                                lmeTBL.Cond = nominal(lmeTBL.Cond);
-                                lmeTBL.Sub = nominal(lmeTBL.Sub);
-                                lmeTBL.Elec = nominal(lmeTBL.Elec);
-                                lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
-                
 %                 lmeTBL = table([frameDataM;frameDataS],[CondIndexM;CondIndexS],[subIndexM;subIndexS], ...
-%                     [elecIndexM(:,1);elecIndexS(:,1)], [elecIndexM(:,2);elecIndexS(:,2)], 'VariableNames',{'Y','Cond','Sub','Elec1','Elec2'});
+%                     [elecIndexM;elecIndexS], 'VariableNames',{'Y','Cond','Sub','Elec'});
 %                 lmeTBL.Cond = nominal(lmeTBL.Cond);
 %                 lmeTBL.Sub = nominal(lmeTBL.Sub);
-%                 lmeTBL.Elec1 = nominal(lmeTBL.Elec1);
-%                 lmeTBL.Elec2 = nominal(lmeTBL.Elec2);
-%                 lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec1:Elec2)','fitmethod','reml','DummyVarCoding','effects');
-%                 
+%                 lmeTBL.Elec = nominal(lmeTBL.Elec);
+%                 lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
+               
+                                lmeTBL = table([frameDataM;frameDataS],[CondIndexM;CondIndexS],[subIndexM;subIndexS], ...
+                                    [elecIndexM(:,1);elecIndexS(:,1)], [elecIndexM(:,2);elecIndexS(:,2)], 'VariableNames',{'Y','Cond','Sub','Elec1','Elec2'});
+                                lmeTBL.Cond = nominal(lmeTBL.Cond);
+                                lmeTBL.Sub = nominal(lmeTBL.Sub);
+                                lmeTBL.Elec1 = nominal(lmeTBL.Elec1);
+                                lmeTBL.Elec2 = nominal(lmeTBL.Elec2);
+                                lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec1:Elec2)','fitmethod','reml','DummyVarCoding','effects');
+                
                 [~,~,lmeStats] = fixedEffects(lmeStruct);
                 tMap(1,ifreq) = lmeStats.tStat(2);
                 pMap(1,ifreq) = lmeStats.pValue(2);
