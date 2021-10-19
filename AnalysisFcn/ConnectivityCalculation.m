@@ -48,9 +48,9 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [3];
+seedIndex = [1];
 searchIndex = [7];
-icontrol = [1];
+icontrol = [3];
 % allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
     for isearch = searchIndex
@@ -933,46 +933,77 @@ for iseed = seedIndex
                 
                 time2cal  = trlDataM.time{1}>=min(timeWin) & trlDataM.time{1}<=max(timeWin);
                 
-                % calculate connectivity metric
-                for iseedElec = seedElec'
-                    for isearchElec = searchElec'
-                        for icontrolElec = controlElec'
-                            allChanCmb = [allChanCmb;[iseedElec,isearchElec]];
-                            % Matched Condition
-                            
-                            X = [];
-                            for itrl = 1:numel(trlDataM.trial)
-                                X(:,:,itrl) = trlDataM.trial{itrl}([iseedElec,isearchElec,icontrolElec],time2cal);
-                            end
-                            
-                            mvgc_calculate % calculate granger causality
-                            FM = f;
-                            allGrangerM(Npair,:) = squeeze((FM(2,1,:)-FM(1,2,:))./ ...
-                                (FM(1,2,:)+FM(2,1,:)))';
-                            
-                            % Scrambled Condition
-                            
-                            X = [];
-                            for itrl = 1:numel(trlDataS.trial)
-                                X(:,:,itrl) = trlDataS.trial{itrl}([iseedElec,isearchElec,icontrolElec],time2cal);
-                            end
-                            
-                            mvgc_calculate % calculate granger causality
-                            FS = f;
-                            fres = size(f,3)-1;
-                            freqPoints = sfreqs(fres,fs)';
-                            
-                            allGrangerS(Npair,:) = squeeze((FS(2,1,:)-FS(1,2,:))./ ...
-                                (FS(1,2,:)+FS(2,1,:)))';
-                            
-                            
-                            
-                            % count for pairs of eletrodes
-                            Npair = Npair + 1;
+                if isempty(controlElec)
+                    % calculate connectivity metric with two regions
+                    for iseedElec = seedElec'
+                        for isearchElec = searchElec'
+                                allChanCmb = [allChanCmb;[iseedElec,isearchElec]];
+                                % Matched Condition
+                                X = [];
+                                for itrl = 1:numel(trlDataM.trial)
+                                    X(:,:,itrl) = trlDataM.trial{itrl}([iseedElec,isearchElec],time2cal);
+                                end
+                                
+                                mvgc_calculate % calculate granger causality
+                                FM = f;
+                                allGrangerM(Npair,:) = squeeze((FM(2,1,:)-FM(1,2,:))./ ...
+                                    (FM(1,2,:)+FM(2,1,:)))';
+                                
+                                % Scrambled Condition
+                                X = [];
+                                for itrl = 1:numel(trlDataS.trial)
+                                    X(:,:,itrl) = trlDataS.trial{itrl}([iseedElec,isearchElec],time2cal);
+                                end
+                                
+                                mvgc_calculate % calculate granger causality
+                                FS = f;
+                                fres = size(f,3)-1;
+                                freqPoints = sfreqs(fres,fs)';
+                                allGrangerS(Npair,:) = squeeze((FS(2,1,:)-FS(1,2,:))./ ...
+                                    (FS(1,2,:)+FS(2,1,:)))';
+
+                                % count for pairs of eletrodes
+                                Npair = Npair + 1;
                         end
                     end
+                    
+                else
+                    % calculate connectivity metric with three regions
+                    for iseedElec = seedElec'
+                        for isearchElec = searchElec'
+                            for icontrolElec = controlElec'
+                                allChanCmb = [allChanCmb;[iseedElec,isearchElec]];
+                                % Matched Condition
+                                X = [];
+                                for itrl = 1:numel(trlDataM.trial)
+                                    X(:,:,itrl) = trlDataM.trial{itrl}([iseedElec,isearchElec,icontrolElec],time2cal);
+                                end
+                                
+                                mvgc_calculate % calculate granger causality
+                                FM = f;
+                                allGrangerM(Npair,:) = squeeze((FM(2,1,:)-FM(1,2,:))./ ...
+                                    (FM(1,2,:)+FM(2,1,:)))';
+                                
+                                % Scrambled Condition
+                                X = [];
+                                for itrl = 1:numel(trlDataS.trial)
+                                    X(:,:,itrl) = trlDataS.trial{itrl}([iseedElec,isearchElec,icontrolElec],time2cal);
+                                end
+                                
+                                mvgc_calculate % calculate granger causality
+                                FS = f;
+                                fres = size(f,3)-1;
+                                freqPoints = sfreqs(fres,fs)';
+                                allGrangerS(Npair,:) = squeeze((FS(2,1,:)-FS(1,2,:))./ ...
+                                    (FS(1,2,:)+FS(2,1,:)))';
+        
+                                % count for pairs of eletrodes
+                                Npair = Npair + 1;
+                            end
+                        end
+                    end
+                    
                 end
-                
                 
                 % generate index for Subject Electrode and Trial
                 

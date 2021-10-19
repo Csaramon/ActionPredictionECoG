@@ -9,7 +9,7 @@ regmode   = 'OLS';  % VAR model estimation regression mode ('OLS', 'LWR' or empt
 icregmode = 'LWR';  % information criteria regression mode ('OLS', 'LWR' or empty for default)
 
 morder    = 'AIC';  % model order to use ('actual', 'AIC', 'BIC' or supplied numerical value)
-momax     = 50;     % maximum model order for model order estimation
+momax     = 20;     % maximum model order for model order estimation
 
 AT = [];
 acmaxlags = [];   % maximum autocovariance lags (empty for automatic calculation)
