@@ -18,8 +18,8 @@ tstat     = '';     % statistical test for MVGC:  'F' for Granger's F-test (defa
 alpha     = 0.05;   % significance level for significance test
 mhtc      = 'FDR';  % multiple hypothesis test correction (see routine 'significance')
 
-fs        = 250;    % sample rate (Hz)
-fres      = 250;     % frequency resolution (empty for automatic calculation)
+fs        = 500;    % sample rate (Hz)
+fres      = 500;     % frequency resolution (empty for automatic calculation)
 
 seed      = 0;      % random seed (0 for unseeded)
 
