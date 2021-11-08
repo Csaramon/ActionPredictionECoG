@@ -1318,12 +1318,12 @@ for iseed = seedIndex
                     grangercfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
                     grangerM      = ft_connectivityanalysis(grangercfg, freqM);
                     
-                    for ilabel = 1:numel(grangerM.labelcmb)
-                        grangerM.labelcmb{ilabel}(find(grangerM.labelcmb{ilabel}=='['):end)=[];
+                    for ilable = 1:numel(grangerM.labelcmb)
+                        find(grangerM.labelcmb{ilable})
                     end
                     fromInd = false(size(grangerM.labelcmb,1),1);
-                    for is = seedElec'
-                        fromInd = fromInd+strcmp(trlDataM.label{is},grangerM.labelcmb(:,1));
+                    for iseed = seedElec'
+                        fromInd = fromInd+strncmp(trlDataM.label{iseed},grangerM.labelcmb(:,1),length(trlDataM.label{iseed}));
                     end
                     fromInd = logical(fromInd);
                     toInd = logical(1-fromInd);
@@ -1338,12 +1338,9 @@ for iseed = seedIndex
                     grangercfg.channelcmb = {trlDataS.label(seedElec) trlDataS.label(searchElec)};
                     grangerS      = ft_connectivityanalysis(grangercfg, freqS);
                     
-                    for ilabel = 1:numel(grangerS.labelcmb)
-                        grangerS.labelcmb{ilabel}(find(grangerS.labelcmb{ilabel}=='['):end)=[];
-                    end
                     fromInd = false(size(grangerS.labelcmb,1),1);
-                    for is = seedElec'
-                        fromInd = fromInd+strcmp(trlDataS.label{is},grangerS.labelcmb(:,1));
+                    for iseed = seedElec'
+                        fromInd = fromInd+strncmp(trlDataS.label{iseed},grangerS.labelcmb(:,1),length(trlDataS.label{iseed}));
                     end
                                         fromInd = logical(fromInd);
                     toInd = logical(1-fromInd);
