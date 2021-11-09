@@ -1,5 +1,6 @@
 %% data path definition
-basePath = '~/Desktop/ActionPrediction/';
+basePath = '/Users/qinchaoyi/Documents/ActionPredictionECoG/';
+dataPath = [basePath 'Data/'];
 resultPath = [basePath 'Results/'];
 
 %% plot IVC electrodes on MNI brain
@@ -332,15 +333,41 @@ load([pathname filename])
 Para.elecposMNI(Para.elecposMNI(:,1)>0,1) = Para.elecposMNI(Para.elecposMNI(:,1)>0,1).*-1;
 for ie = 1:size(Para.elecposMNI,1)
     
-    he(ie) = scatter3(stereoaxes,Para.elecposMNI(ie,1),Para.elecposMNI(ie,2),Para.elecposMNI(ie,3),60,[255 185 15]./255,'fill');
+    he(ie) = scatter3(stereoaxes,Para.elecposMNI(ie,1),Para.elecposMNI(ie,2),Para.elecposMNI(ie,3),60,[209 208 167]./255,'fill');
 end
 
 
-% 240,0,0 precentral
+% 225 238 210 precentral
 % 193 255 193 Pft
-% 100 149 237 Visual
+% 209 208 167 Visual
 % 46 139 87 BA44
 % 255 185 15 IPL
+
+
+%% plot all electrodes on MNI brain
+
+allsub = {'Patient1','Patient2','Patient3','Patient4','Patient6', ...
+    'Patient8','Patient9','Patient11','Patient12','Patient13'}; % all sub
+PlotMNIBrain
+
+nn = 0;
+% load in electrodes coordinates
+for isub = 1:numel(allsub)
+    subColor = rand(1,3);
+    elecposMNI = importdata([dataPath allsub{isub} '/FsRecon/brain3D/MNI152_coordinates_ras.txt']);
+    elecposMNI = elecposMNI(:,1:3);
+    elecposMNI(elecposMNI(:,1)>0,1) = elecposMNI(elecposMNI(:,1)>0,1).*-1;
+    for ie = 1:size(elecposMNI,1)
+        
+        he(isub) = scatter3(stereoaxes,elecposMNI(ie,1),elecposMNI(ie,2),elecposMNI(ie,3),60,subColor,'fill');
+    end
+
+nn = nn+size(elecposMNI,1);
+
+end
+
+ legend(he,allsub,'Location','northeast')
+   
 %% plot specifc regions
 
 %  % precentral
@@ -352,44 +379,45 @@ end
 % %     'fslmaths ' [MNI152path '/mri/fsAnatomyMacro.nii'] ...
 % %     ' -thr ' num2str(min(aprac_indx)) ' -uthr ' num2str(max(aprac_indx)) ' ' [MNI152path '/mri/surf_aprac.nii']];
 % unix(bashcode);
-%
+% 
 % make_outer_surface_wlab ([MNI152path '/mri/surf_aprac.nii'], 15, [MNI152path '/mri/surf_aprac.surf']);
-%
+% 
 % fprintf('Adding surface\n')
 % [vertices, faces]=read_surf([MNI152path '/mri/surf_aprac.surf']);
 % faces = faces+1;
 % aparc_stereo = patch(struct(...
 %     'vertices', vertices, 'faces', faces), ...
 %     'Parent',stereoaxes, ...
-%     'FaceColor',[255 218 185]./255, ...
+%     'FaceColor',[209,73,78]./255, ...
 %     'FaceAlpha',0.5, ...
 %     'EdgeColor', 'none', ...
 %     'Tag', num2str(aprac_indx));
 % material dull
 %
 % --------------------------
-% aprac_indx = [51];
-%     bashcode = ['. ~/.zshrc;' ...
-%         'mri_binarize --i ' [MNI152path '/mri/fsAnatomyMacro.nii'] ...
-%         ' --min ' num2str(min(aprac_indx)-0.01) ' --max ' num2str(max(aprac_indx)+0.01) ' --o ' [MNI152path '/mri/surf_aprac.nii']];
-% % bashcode = ['. ~/.zshrc;' ...
-% %     'fslmaths ' [MNI152path '/mri/fsAnatomyMacro.nii'] ...
-% %     ' -thr ' num2str(min(aprac_indx)) ' -uthr ' num2str(max(aprac_indx)) ' ' [MNI152path '/mri/surf_aprac.nii']];
-% unix(bashcode);
-%
-% make_outer_surface_wlab ([MNI152path '/mri/surf_aprac.nii'], 15, [MNI152path '/mri/surf_aprac.surf']);
-%
-% fprintf('Adding surface\n')
-% [vertices, faces]=read_surf([MNI152path '/mri/surf_aprac.surf']);
-% faces = faces+1;
-% aparc_stereo = patch(struct(...
-%     'vertices', vertices, 'faces', faces), ...
-%     'Parent',stereoaxes, ...
-%     'FaceColor',[144 238 144]./255, ...
-%     'FaceAlpha',0.5, ...
-%     'EdgeColor', 'none', ...
-%     'Tag', num2str(aprac_indx));
-% material dull
+% middle occipital
+aprac_indx = [51];
+    bashcode = ['. ~/.zshrc;' ...
+        'mri_binarize --i ' [MNI152path '/mri/fsAnatomyMacro.nii'] ...
+        ' --min ' num2str(min(aprac_indx)-0.01) ' --max ' num2str(max(aprac_indx)+0.01) ' --o ' [MNI152path '/mri/surf_aprac.nii']];
+% bashcode = ['. ~/.zshrc;' ...
+%     'fslmaths ' [MNI152path '/mri/fsAnatomyMacro.nii'] ...
+%     ' -thr ' num2str(min(aprac_indx)) ' -uthr ' num2str(max(aprac_indx)) ' ' [MNI152path '/mri/surf_aprac.nii']];
+unix(bashcode);
+
+make_outer_surface_wlab ([MNI152path '/mri/surf_aprac.nii'], 15, [MNI152path '/mri/surf_aprac.surf']);
+
+fprintf('Adding surface\n')
+[vertices, faces]=read_surf([MNI152path '/mri/surf_aprac.surf']);
+faces = faces+1;
+aparc_stereo = patch(struct(...
+    'vertices', vertices, 'faces', faces), ...
+    'Parent',stereoaxes, ...
+    'FaceColor',[18 53 85]./255, ...
+    'FaceAlpha',0.5, ...
+    'EdgeColor', 'none', ...
+    'Tag', num2str(aprac_indx));
+material dull
 %
 % aprac_indx = [53];
 %     bashcode = ['. ~/.zshrc;' ...
@@ -490,25 +518,25 @@ end
 
 
 %  % pft
-aprac_indx = [1 255];
-bashcode = ['. ~/.zshrc;' ...
-    'mri_binarize --i ' [MNI152path '/mri/fsLeft_IPL_PFt.nii'] ...
-    ' --min ' num2str(min(aprac_indx)-0.01) ' --max ' num2str(max(aprac_indx)+0.01) ' --o ' [MNI152path '/mri/surf_aprac.nii']];
+% aprac_indx = [1 255];
 % bashcode = ['. ~/.zshrc;' ...
-%     'fslmaths ' [MNI152path '/mri/fsAnatomyMacro.nii'] ...
-%     ' -thr ' num2str(min(aprac_indx)) ' -uthr ' num2str(max(aprac_indx)) ' ' [MNI152path '/mri/surf_aprac.nii']];
-unix(bashcode);
-
-make_outer_surface_wlab ([MNI152path '/mri/surf_aprac.nii'], 15, [MNI152path '/mri/surf_aprac.surf']);
-
-fprintf('Adding surface\n')
-[vertices, faces]=read_surf([MNI152path '/mri/surf_aprac.surf']);
-faces = faces+1;
-aparc_stereo = patch(struct(...
-    'vertices', vertices, 'faces', faces), ...
-    'Parent',stereoaxes, ...
-    'FaceColor',[255 218 185]./255, ...
-    'FaceAlpha',0.5, ...
-    'EdgeColor', 'none', ...
-    'Tag', num2str(aprac_indx));
-material dull
+%     'mri_binarize --i ' [MNI152path '/mri/fsLeft_IPL_PFt.nii'] ...
+%     ' --min ' num2str(min(aprac_indx)-0.01) ' --max ' num2str(max(aprac_indx)+0.01) ' --o ' [MNI152path '/mri/surf_aprac.nii']];
+% % bashcode = ['. ~/.zshrc;' ...
+% %     'fslmaths ' [MNI152path '/mri/fsAnatomyMacro.nii'] ...
+% %     ' -thr ' num2str(min(aprac_indx)) ' -uthr ' num2str(max(aprac_indx)) ' ' [MNI152path '/mri/surf_aprac.nii']];
+% unix(bashcode);
+% 
+% make_outer_surface_wlab ([MNI152path '/mri/surf_aprac.nii'], 15, [MNI152path '/mri/surf_aprac.surf']);
+% 
+% fprintf('Adding surface\n')
+% [vertices, faces]=read_surf([MNI152path '/mri/surf_aprac.surf']);
+% faces = faces+1;
+% aparc_stereo = patch(struct(...
+%     'vertices', vertices, 'faces', faces), ...
+%     'Parent',stereoaxes, ...
+%     'FaceColor',[255 218 185]./255, ...
+%     'FaceAlpha',0.5, ...
+%     'EdgeColor', 'none', ...
+%     'Tag', num2str(aprac_indx));
+% material dull
