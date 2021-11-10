@@ -10,6 +10,7 @@ if strcmpi(computer,'PCWIN64')
     addpath('C:\Users\qin2\Documents\MATLAB\toolbox')
     addpath('C:\Users\qin2\Documents\MATLAB\toolbox\fieldtrip-20210418')
     basePath = 'C:\Users\qin2\Documents\ActionPredictionECoG\';
+    
 elseif strcmpi(computer,'MACI64')
     addpath('~/Desktop/ActionPrediction')
     addpath('C:\Users\qin2\Documents\MATLAB\toolbox\fieldtrip-20210418')
@@ -1203,8 +1204,8 @@ for iseed = seedIndex
             if strcmp(calculate,'GrangerTF')
                 
                p=0.05; % threshold for IVC
-                timeWin = 0.4; % unit in second
-                timeStep = 0.05; % unit in second
+                timeWin = 0.3; % unit in second
+                timeStep = 0.1; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -1618,8 +1619,6 @@ for iseed = seedIndex
             pMap = zeros(1,size(metricM,3));
             y2plot = zeros(2,size(metricM,3));
             se2plot = zeros(2,size(metricM,3));
-            yraw = zeros(2,size(metricM,3));
-            seraw = zeros(2,size(metricM,3));
             
             strlen = 0;
             % TFR point wise LME
@@ -1655,10 +1654,6 @@ for iseed = seedIndex
                 obsVal2 = Ycorr(lmeTBL.Cond=='2');
                 y2plot(:,itime) = [mean(obsVal1);mean(obsVal2)];
                 se2plot(:,itime) = [std(obsVal1)./sqrt(numel(obsVal1));std(obsVal2)./sqrt(numel(obsVal2))];
-                rawVal1 = lmeTBL.Y(lmeTBL.Cond=='1');
-                rawVal2 = lmeTBL.Y(lmeTBL.Cond=='2');
-                yraw(:,itime) = [mean(rawVal1);mean(rawVal2)];
-                seraw(:,itime) = [std(rawVal1)./sqrt(numel(rawVal1));std(rawVal2)./sqrt(numel(rawVal2))];
                 
             end
             
@@ -1874,7 +1869,7 @@ for iseed = seedIndex
             tMap = zeros(1,size(metricM,3));
             pMap = zeros(1,size(metricM,3));
             y2plot = zeros(2,size(metricM,3));
-            yraw = zeros(2,size(metricM,3));
+            y2raw = zeros(2,size(metricM,3));
             se2plot = zeros(2,size(metricM,3));
             
             strlen = 0;
@@ -1917,7 +1912,7 @@ for iseed = seedIndex
                 obsVal1 = Ycorr(lmeTBL.Cond=='1');
                 obsVal2 = Ycorr(lmeTBL.Cond=='2');
                 y2plot(:,itime) = [mean(obsVal1);mean(obsVal2)];
-                yraw(:,itime) = [mean(lmeTBL.Y(lmeTBL.Cond=='1')),mean(lmeTBL.Y(lmeTBL.Cond=='2'))];
+                y2raw(:,itime) = [mean(lmeTBL.Y(lmeTBL.Cond=='1')),mean(lmeTBL.Y(lmeTBL.Cond=='2'))];
                 se2plot(:,itime) = [std(obsVal1)./sqrt(numel(obsVal1));std(obsVal2)./sqrt(numel(obsVal2))];
                 
             end
@@ -1926,7 +1921,7 @@ for iseed = seedIndex
                 mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'])
             end
             save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz' filesep ...
-                ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot','yraw','Para');
+                ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot','y2raw','Para');
             
             
         end
@@ -1947,9 +1942,8 @@ for iseed = seedIndex
             tMap = zeros(1,size(allMetricM,2));
             pMap = zeros(1,size(allMetricM,2));
             y2plot = zeros(2,size(allMetricM,2));
+            y2raw = zeros(2,size(allMetricM,2));
             se2plot = zeros(2,size(allMetricM,2));
-            yraw = zeros(2,size(allMetricM,2));
-            seraw = zeros(2,size(allMetricM,2));
             
             strlen = 0;
             % TFR point wise LME
@@ -1992,11 +1986,8 @@ for iseed = seedIndex
                 obsVal1 = Ycorr(lmeTBL.Cond=='1');
                 obsVal2 = Ycorr(lmeTBL.Cond=='2');
                 y2plot(:,ifreq) = [mean(obsVal1);mean(obsVal2)];
+                y2raw(:,ifreq) = [mean(lmeTBL.Y(lmeTBL.Cond=='1')),mean(lmeTBL.Y(lmeTBL.Cond=='2'))];
                 se2plot(:,ifreq) = [std(obsVal1)./sqrt(numel(obsVal1));std(obsVal2)./sqrt(numel(obsVal2))];
-                rawVal1 = lmeTBL.Y(lmeTBL.Cond=='1');
-                rawVal2 = lmeTBL.Y(lmeTBL.Cond=='2');
-                yraw(:,ifreq) = [mean(rawVal1);mean(rawVal2)];
-                seraw(:,ifreq) = [std(rawVal1)./sqrt(numel(rawVal1));std(rawVal2)./sqrt(numel(rawVal2))];
                 
             end
             
@@ -2004,24 +1995,14 @@ for iseed = seedIndex
                 mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)])
             end
             save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) filesep ...
-                ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot', ...
-                'yraw','seraw','Para');
+                ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot','y2raw','Para');
             
             
             
             
         end
-       
         
-            %% Save results
-                        if ~exist([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'],'file')
-                    mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'])
-                end
-                save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz' ...
-                    filesep ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot','yraw','seraw','Para');
-
-                
-                
+        
     end
 end
 

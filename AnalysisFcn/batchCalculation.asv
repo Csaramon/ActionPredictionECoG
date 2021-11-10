@@ -720,7 +720,7 @@ for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
         %%%%%%%%%%%%%%%%%%%%%%%%
         if strcmp(calculate,'BPall')
             
-            freqRange = [13 20];
+            freqRange = [3 8];
             
             %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
