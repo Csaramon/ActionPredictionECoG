@@ -2,7 +2,7 @@ function varargout = batchCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'BPall'
+    calculate = 'PAC'
 end
 
 % initialize base path and toolbox
@@ -52,7 +52,7 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
 
-for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
+for iatlas = [1,3,7,8,9]%1:numel(ROIIndex) %[1,3,7,8,9]
     
     % load altlas infomation
     aparc_nii = load_nifti([basePath 'Atlas' filesep ROIAtlas{iatlas}]);
@@ -720,7 +720,7 @@ for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
         %%%%%%%%%%%%%%%%%%%%%%%%
         if strcmp(calculate,'BPall')
             
-            freqRange = [13 20];
+            freqRange = [13 30];
             
             %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -773,9 +773,9 @@ for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
             
             allTS = freq.powspctrm;
             % low pass filtering
-%             for ifreq = 1:size(allTS,2)
-%                 [allTS(:,ifreq,:), ~, ~] = ft_preproc_lowpassfilter(squeeze(allTS(:,ifreq,:)),500,0.5,[],'firws');
-%             end
+            for ifreq = 1:size(allTS,2)
+                [allTS(:,ifreq,:), ~, ~] = ft_preproc_lowpassfilter(squeeze(allTS(:,ifreq,:)),500,0.5,[],'firws');
+            end
             
             % calculate MPD
             MeanPowDiff
@@ -853,6 +853,7 @@ for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
         %%%%%%%%%%%%%%%%%%%%%%%%
         if strcmp(calculate,'PAC')
             
+            addpath /data00/Chaoyi/toolbox/tools/pac_code_best
             % calculation parameters
             timeRange = [0 0.5];
             
@@ -1215,6 +1216,10 @@ for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
         
         tMap = zeros(size(metricM,2),size(metricM,3));
         pMap = zeros(size(metricM,2),size(metricM,3));
+        y2plot = zeros(2,size(metricM,32),size(metricM,3));
+        se2plot = zeros(2,size(metricM,32),size(metricM,3));
+        yraw = zeros(2,size(metricM,32),size(metricM,3));
+        seraw = zeros(2,size(metricM,32),size(metricM,3));
         
         strlen = 0;
         % point wise LME
@@ -1243,14 +1248,25 @@ for iatlas = 1:numel(ROIIndex) %[1,3,7,8,9]
                 [~,~,lmeStats] = fixedEffects(lmeStruct);
                 tMap(ifreq,itime) = lmeStats.tStat(2);
                 pMap(ifreq,itime) = lmeStats.pValue(2);
+                                [randBeta,~,~] = randomEffects(lmeStruct);
+                Z = designMatrix(lmeStruct,'random');
+                Ycorr = lmeTBL.Y-Z*randBeta;
+                obsVal1 = Ycorr(lmeTBL.Cond=='1');
+                obsVal2 = Ycorr(lmeTBL.Cond=='2');
+                y2plot(:,ifreq,itime) = [mean(obsVal1);mean(obsVal2)];
+                se2plot(:,ifreq,itime) = [std(obsVal1)./sqrt(numel(obsVal1));std(obsVal2)./sqrt(numel(obsVal2))];
+                rawVal1 = lmeTBL.Y(lmeTBL.Cond=='1');
+                rawVal2 = lmeTBL.Y(lmeTBL.Cond=='2');
+                yraw(:,ifreq,itime) = [mean(rawVal1);mean(rawVal2)];
+                seraw(:,ifreq,itime) = [std(rawVal1)./sqrt(numel(rawVal1));std(rawVal2)./sqrt(numel(rawVal2))];
             end
         end
         
         if ~exist([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4)],'file')
             mkdir([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4)])
         end
-        save([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ROIText{iatlas}],'lmeTBL','tMap','pMap','Para');
-        
+        save([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ROIText{iatlas}], ...
+            'lmeTBL','tMap','pMap','y2plot','se2plot','yraw','seraw','Para');
         
     end
     
