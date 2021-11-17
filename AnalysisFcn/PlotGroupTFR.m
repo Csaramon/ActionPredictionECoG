@@ -95,12 +95,14 @@ end
 % load in TFR LMEM
 load([pathname filename])
 
-tMap(tMap==0)=nan;
-pMap(pMap==0)=nan;
-
+tMap = tMap';
+pMap = pMap';
+% tMap(tMap==0)=nan;
+% pMap(pMap==0)=nan;
+ynorm = yraw./(repmat(mean(yraw,3),1,1,size(yraw,3)));
 cdat = tMap;
-vdat = Para.freqvec_amp;
-hdat = Para.freqvec_ph;
+vdat = Para.freqhigh;
+hdat = Para.freqlow;
 clim = [min(cdat(:)) max(cdat(:))];
 
 % uncorrected
@@ -149,11 +151,11 @@ ylabel([filename(ti:end) ' Amplitude (Hz)'])
 
 
 subplot(1,3,1)
-hM = pcolor(hdat,vdat,squeeze(yraw(1,:,:)));shading interp
+hM = pcolor(hdat,vdat,squeeze(ynorm(1,:,:))');shading interp
 ca = get(gca,'CLim');
 
 subplot(1,3,2)
-hS = pcolor(hdat,vdat,squeeze(yraw(2,:,:)));shading interp
+hS = pcolor(hdat,vdat,squeeze(ynorm(2,:,:))');shading interp
 caxis(ca)
 
 
