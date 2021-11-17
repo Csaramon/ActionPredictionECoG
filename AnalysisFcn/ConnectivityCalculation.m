@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'GrangerTF'
+    calculate = 'PAC'
 end
 
 % initialize base path and toolbox
@@ -50,14 +50,14 @@ roiDist = 1; % maximum distance between electrodes and ROI voxels
 seedIndex = [1 3 7];
 searchIndex = [1 3 7];
 icontrol = [3];
-allPair = nchoosek(seedIndex,2);
+% allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
     for isearch = searchIndex
         
         %                 skip redundant pairs
-        if ~ismember([iseed,isearch],allPair,'rows')
-            continue
-        end
+        %         if ~ismember([iseed,isearch],allPair,'rows')
+        %             continue
+        %         end
         
         if iseed==isearch
             continue
@@ -712,7 +712,7 @@ for iseed = seedIndex
                 cfg.trials = find(trlData.trialinfo(:,1)==1);
                 trlDataS = ft_selectdata(cfg,trlData);
                 
-                timeRange = [min(trlData.time{1}) max(trlData.time{1})];
+                timeWin = [min(trlData.time{1}) max(trlData.time{1})];
                 
                 clear trlData
                 
@@ -731,7 +731,7 @@ for iseed = seedIndex
                 in = 1;
                 allcohM = [];
                 allcohS = [];
-                for itw = min(timeRange):timeStep:max(timeRange)-timeWin
+                for itw = min(timeWin):timeStep:max(timeWin)-timeWin
                     
                     % choose time window
                     cfg = [];
@@ -1202,7 +1202,7 @@ for iseed = seedIndex
             %%%%%%%%%%%%%%%%%%%%%%%%
             if strcmp(calculate,'GrangerTF')
                 
-               p=0.05; % threshold for IVC
+                p=0.05; % threshold for IVC
                 timeWin = 0.4; % unit in second
                 timeStep = 0.05; % unit in second
                 
@@ -1260,7 +1260,7 @@ for iseed = seedIndex
                 cfg.trials = find(trlData.trialinfo(:,1)==1);
                 trlDataS = ft_selectdata(cfg,trlData);
                 
-                timeRange = [min(trlData.time{1}) max(trlData.time{1})];
+                timeWin = [min(trlData.time{1}) max(trlData.time{1})];
                 
                 clear trlData
                 
@@ -1279,7 +1279,7 @@ for iseed = seedIndex
                 in = 1;
                 allGrangerM = [];
                 allGrangerS = [];
-                for itw = min(timeRange):timeStep:max(timeRange)-timeWin
+                for itw = min(timeWin):timeStep:max(timeWin)-timeWin
                     
                     % choose time window
                     cfg = [];
@@ -1328,7 +1328,7 @@ for iseed = seedIndex
                     toInd = logical(1-fromInd);
                     allGrangerM(:,:,in) = (grangerM.grangerspctrm(fromInd,:)-grangerM.grangerspctrm(toInd,:))./ ...
                         (grangerM.grangerspctrm(fromInd,:)+grangerM.grangerspctrm(toInd,:));
-
+                    
                     % calculate Granger Index in Scambled Condition
                     grangercfg = [];
                     grangercfg.method  = 'granger';
@@ -1344,11 +1344,11 @@ for iseed = seedIndex
                     for is = seedElec'
                         fromInd = fromInd+strcmp(trlDataS.label{is},grangerS.labelcmb(:,1));
                     end
-                                        fromInd = logical(fromInd);
+                    fromInd = logical(fromInd);
                     toInd = logical(1-fromInd);
                     allGrangerS(:,:,in) = (grangerS.grangerspctrm(fromInd,:)-grangerS.grangerspctrm(toInd,:))./ ...
                         (grangerS.grangerspctrm(fromInd,:)+grangerS.grangerspctrm(toInd,:));
-
+                    
                     
                     timePt(in) = mean([itw 0.5*timeWin]);
                     in = in+1;
@@ -1383,7 +1383,7 @@ for iseed = seedIndex
                 Para.timePT = timePt;
                 Para.freq = freqM.freq;
                 nelec = nelec+Npair-1;
-
+                
                 
             end
             
@@ -1593,6 +1593,180 @@ for iseed = seedIndex
                 
                 
             end
+            
+            
+            %% section5: calculate cross regional PAC %%
+            %%%%%%%%%%%%%%%%%%%%%%%%
+            if strcmp(calculate,'PAC')
+                
+                % calculation parameters
+                pacMethod = 'coh'; % coh,plv,mlv,mi,pac
+                timeWin = [0 0.5];
+                
+                %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                if exist([dataPath subname 'LAR_trlData.mat'],'file')
+                    a = load([dataPath subname 'LAR_trlData']);
+                end
+                c = fieldnames(a);
+                trlData = a.(c{1});
+                
+                % choose seed electrodes according to MNI coordinates
+                elecposMNI = trlData.elec.elecposMNI;
+                tempdev = pdist2(elecposMNI,seed_coordiantes);
+                [it,~] = find(tempdev <=roiDist);
+                seedElec = unique(it);
+                
+                % choose search electrodes according to MNI coordinates
+                tempdev = pdist2(elecposMNI,search_coordiantes);
+                [it,~] = find(tempdev <=roiDist);
+                searchElec = unique(it);
+                
+                
+                % additional preprocessing
+                %             cfg = [];
+                %             cfg.demean = 'yes';
+                %             cfg.detrend = 'yes';
+                %
+                %             trlData = ft_preprocessing(cfg,trlData);
+                
+                % skip bad channels
+                badChanInd = trlData.trial{1,1}(seedElec,1)==0;
+                seedElec(badChanInd) = [];
+                
+                badChanInd = trlData.trial{1,1}(searchElec,1)==0;
+                searchElec(badChanInd) = [];
+                
+                % skip if no electrode pair
+                if ~any(seedElec) | ~any(searchElec) | isempty(setdiff(seedElec,searchElec))
+                    continue
+                end
+                
+                % remove superimposed electrodes
+                duplicateInd = intersect(searchElec,seedElec);
+                if ~isempty(duplicateInd)
+                    if numel(searchElec) > numel(seedElec)
+                        searchElec = setdiff(searchElec,duplicateInd);
+                    else
+                        seedElec = setdiff(seedElec,duplicateInd);
+                    end
+                end
+                % seperate conditions
+                cfg = [];
+                cfg.trials = find(trlData.trialinfo(:,1)==0);
+                trlDataM = ft_selectdata(cfg,trlData);
+                
+                cfg = [];
+                cfg.trials = find(trlData.trialinfo(:,1)==1);
+                trlDataS = ft_selectdata(cfg,trlData);
+                
+                
+                % calculate single electrode PAC without shuffle
+                
+                Npair = 1;
+                allChanCmb = [];
+                
+                foi          = logspace(log10(2),log10(128),32);
+                width        =  logspace(log10(3),log10(10),32); % adjustive cycles
+                
+                %%%%---- calculate PAC in Intact condition ---- %%%%
+                % time-frequency decomposition (wavelet)
+                cfg              = [];
+                cfg.channel = seedElec;
+                cfg.output       = 'fourier';
+                cfg.method       = 'wavelet';
+                cfg.foi          = foi(foi>=1 & foi<=30);
+                cfg.width        =  width(foi>=1 & foi<30);
+                cfg.toi          = min(timeWin):0.002:max(timeWin);%'all';
+                cfg.precision = 'single';
+                
+                ft_warning off
+                freqlow = ft_freqanalysis(cfg,trlDataM);
+                
+                % time-frequency decomposition (wavelet)
+                cfg              = [];
+                cfg.channel = searchElec;
+                cfg.output       = 'fourier';
+                cfg.method       = 'wavelet';
+                cfg.foi          = foi(foi>=30 );
+                cfg.width        =  width(foi>=30);
+                cfg.toi          = min(timeWin):0.002:max(timeWin);%'all';
+                cfg.precision = 'single';
+                
+                ft_warning off
+                freqhigh = ft_freqanalysis(cfg,trlDataM);
+                
+                cfg = [];
+                cfg.method = pacMethod;
+                cfg.chanlow = freqlow.label;
+                cfg.chanhigh = freqhigh.label;
+                cfg.keeptrials = 'no';
+                crossfreq = ft_crossfrequencyanalysis(cfg, freqlow, freqhigh);
+                allPACM = crossfreq.crsspctrm;
+                
+                %%%%---- calculate PAC in Scrambled condition ---- %%%%
+                % time-frequency decomposition (wavelet)
+                cfg              = [];
+                cfg.channel = seedElec;
+                cfg.output       = 'fourier';
+                cfg.method       = 'wavelet';
+                cfg.foi          = foi(foi>=1 & foi<=30);
+                cfg.width        =  width(foi>=1 & foi<30);
+                cfg.toi          = min(timeWin):0.002:max(timeWin);%'all';
+                cfg.precision = 'single';
+                
+                ft_warning off
+                freqlow = ft_freqanalysis(cfg,trlDataS);
+                
+                % time-frequency decomposition (wavelet)
+                cfg              = [];
+                cfg.channel = searchElec;
+                cfg.output       = 'fourier';
+                cfg.method       = 'wavelet';
+                cfg.foi          = foi(foi>=30 );
+                cfg.width        =  width(foi>=30);
+                cfg.toi          = min(timeWin):0.002:max(timeWin);%'all';
+                cfg.precision = 'single';
+                
+                ft_warning off
+                freqhigh = ft_freqanalysis(cfg,trlDataS);
+                
+                cfg = [];
+                cfg.method = pacMethod;
+                cfg.chanlow = freqlow.label;
+                cfg.chanhigh = freqhigh.label;
+                cfg.keeptrials = 'no';
+                crossfreq = ft_crossfrequencyanalysis(cfg, freqlow, freqhigh);
+                allPACS = crossfreq.crsspctrm;
+                
+                allChanCmb = [allChanCmb;crossfreq.labelcmb];
+                Npair = Npair + size(crossfreq.labelcmb,1);
+                
+                
+                % generate index for Subject Electrode and Trial
+                metricM = allPACM;
+                metricS = allPACS;
+                
+                elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-2]');
+                subIndexM = cat(1,subIndexM,repmat(isub,Npair-1,1));
+                
+                
+                elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-2]');
+                subIndexS = cat(1,subIndexS,repmat(isub,Npair-1,1));
+                
+                % concontenate all trial responses in chosen ROI
+                allMetricM = cat(1,allMetricM,metricM);
+                allMetricS = cat(1,allMetricS,metricS);
+                
+                Para.chanCMB{isub} = allChanCmb;
+                Para.pacMethod = pacMethod;
+                Para.timeWin = timeWin;
+                Para.freqlow = freqlow.freq;
+                Para.freqhigh = freqhigh.freq;
+                nelec = nelec+Npair-1;
+                
+            end
+            
             
             
             
@@ -2011,17 +2185,80 @@ for iseed = seedIndex
             
             
         end
-       
         
-            %% Save results
-                        if ~exist([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'],'file')
-                    mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'])
+        %% section5: calculate cross regional PAC %%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        if strcmp(calculate,'PAC')
+            CondIndexM = ones(size(subIndexM));
+            CondIndexS = 2*ones(size(subIndexS));
+            
+            tMap = zeros(size(metricM,2),size(metricM,3));
+            pMap = zeros(size(metricM,2),size(metricM,3));
+            y2plot = zeros(2,size(metricM,32),size(metricM,3));
+            se2plot = zeros(2,size(metricM,32),size(metricM,3));
+            yraw = zeros(2,size(metricM,32),size(metricM,3));
+            seraw = zeros(2,size(metricM,32),size(metricM,3));
+            
+            strlen = 0;
+            % point wise LME
+            for ifreq = 1:size(metricM,2)
+                for itime = 1:size(metricM,3)
+                    
+                    s = ['Calculating tf point: ' num2str(ifreq) '/' num2str(size(metricM,2)) 'AmpFreqs, ' ...
+                        num2str(itime) '/' num2str(size(metricM,3)) 'PhFreqs'];
+                    strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
+                    strlen = strlentmp - strlen;
+                    
+                    frameDataM = double(squeeze(allMetricM(:,ifreq,itime)));
+                    % skip nan point
+                    if ~any(frameDataM,'all')
+                        continue
+                    end
+                    frameDataS = double(squeeze(allMetricS(:,ifreq,itime)));
+                    
+                    
+                    lmeTBL = table([frameDataM;frameDataS],[CondIndexM;CondIndexS],[subIndexM;subIndexS], ...
+                        [elecIndexM;elecIndexS], 'VariableNames',{'Y','Cond','Sub','Elec'});
+                    lmeTBL.Cond = nominal(lmeTBL.Cond);
+                    lmeTBL.Sub = nominal(lmeTBL.Sub);
+                    lmeTBL.Elec = nominal(lmeTBL.Elec);
+                    lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
+                    [~,~,lmeStats] = fixedEffects(lmeStruct);
+                    tMap(ifreq,itime) = lmeStats.tStat(2);
+                    pMap(ifreq,itime) = lmeStats.pValue(2);
+                    [randBeta,~,~] = randomEffects(lmeStruct);
+                    Z = designMatrix(lmeStruct,'random');
+                    Ycorr = lmeTBL.Y-Z*randBeta;
+                    obsVal1 = Ycorr(lmeTBL.Cond=='1');
+                    obsVal2 = Ycorr(lmeTBL.Cond=='2');
+                    y2plot(:,ifreq,itime) = [mean(obsVal1);mean(obsVal2)];
+                    se2plot(:,ifreq,itime) = [std(obsVal1)./sqrt(numel(obsVal1));std(obsVal2)./sqrt(numel(obsVal2))];
+                    rawVal1 = lmeTBL.Y(lmeTBL.Cond=='1');
+                    rawVal2 = lmeTBL.Y(lmeTBL.Cond=='2');
+                    yraw(:,ifreq,itime) = [mean(rawVal1);mean(rawVal2)];
+                    seraw(:,ifreq,itime) = [std(rawVal1)./sqrt(numel(rawVal1));std(rawVal2)./sqrt(numel(rawVal2))];
                 end
-                save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz' ...
-                    filesep ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot','yraw','seraw','Para');
-
-                
-                
+            end
+            
+            if ~exist([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)],'file')
+                mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)])
+            end
+            save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) filesep ...
+                ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot', ...
+                'yraw','seraw','Para');
+            
+        end
+        
+        
+        %             %% Save results
+        %                         if ~exist([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'],'file')
+        %                     mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'])
+        %                 end
+        %                 save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz' ...
+        %                     filesep ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot','yraw','seraw','Para');
+        
+        
+        
     end
 end
 

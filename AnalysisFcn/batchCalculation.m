@@ -853,7 +853,6 @@ for iatlas = [1,3,7,8,9]%1:numel(ROIIndex) %[1,3,7,8,9]
         %%%%%%%%%%%%%%%%%%%%%%%%
         if strcmp(calculate,'PAC')
             
-            addpath /data00/Chaoyi/toolbox/tools/pac_code_best
             % calculation parameters
             timeRange = [0 0.5];
             
