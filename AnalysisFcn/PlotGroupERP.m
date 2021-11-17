@@ -288,7 +288,7 @@ end
 
 % load in TFR LMEM
 load([pathname filename])
-% y2plot = y2raw;
+y2plot = yraw;
 tMap(tMap==0)=nan;
 pMap(pMap==0)=nan;
 

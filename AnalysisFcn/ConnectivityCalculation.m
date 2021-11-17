@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PSI'
+    calculate = 'COHtf'
 end
 
 % initialize base path and toolbox
@@ -50,14 +50,14 @@ roiDist = 1; % maximum distance between electrodes and ROI voxels
 seedIndex = [1 3 7];
 searchIndex = [1 3 7];
 icontrol = [3];
-% allPair = nchoosek(seedIndex,2);
+allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
     for isearch = searchIndex
         
         %                 skip redundant pairs
-        %         if ~ismember([iseed,isearch],allPair,'rows')
-        %             continue
-        %         end
+                if ~ismember([iseed,isearch],allPair,'rows')
+                    continue
+                end
         
         if iseed==isearch
             continue
@@ -655,8 +655,8 @@ for iseed = seedIndex
             if strcmp(calculate,'COHtf')
                 
                 p=0.05; % threshold for IVC
-                timeWin = 0.5; % unit in second
-                timeStep = 0.05; % unit in second
+                timeWin = 1; % unit in second
+                timeStep = 0.1; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -748,7 +748,7 @@ for iseed = seedIndex
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [2 120];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 6;
+                    cfg.tapsmofrq  = 5;
                     cfg.keeptrials = 'yes';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
 
@@ -813,7 +813,7 @@ for iseed = seedIndex
             if strcmp(calculate,'PSI')
                 
                 timeTFR = 0.002; % time step for time frequency results
-                timeWin = 0.5; % unit in second
+                timeWin = 1; % unit in second
                 timeStep = 0.05; % unit in second
                 freqRange = [20 30];
                 
@@ -1205,8 +1205,8 @@ for iseed = seedIndex
             if strcmp(calculate,'GrangerTF')
                 
                 p=0.05; % threshold for IVC
-                timeWin = 0.5; % unit in second
-                timeStep = 0.05; % unit in second
+                timeWin = 1; % unit in second
+                timeStep = 0.1; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -1296,19 +1296,13 @@ for iseed = seedIndex
                     cfg            = [];
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
-                    cfg.foilim     = [2 120];
-                    % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 7;
+                    cfg.foi     = 2:2:120; % need equidistant frequency bins for granger method
+                    cfg.tapsmofrq  = 5;
                     cfg.keeptrials = 'yes';
+                    cfg.pad='nextpow2';
+                    ft_warning off
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
-                    
-                    cfg            = [];
-                    cfg.output     = 'fourier';
-                    cfg.method     = 'mtmfft';
-                    cfg.foilim     = [2 120];
-                    % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 7;
-                    cfg.keeptrials = 'yes';
+
                     freqS    = ft_freqanalysis(cfg, trlDataStmp);
                     
                     % calculate Granger Index in Matched Condition
