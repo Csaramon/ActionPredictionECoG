@@ -751,14 +751,7 @@ for iseed = seedIndex
                     cfg.tapsmofrq  = 6;
                     cfg.keeptrials = 'yes';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
-                    
-                    cfg            = [];
-                    cfg.output     = 'fourier';
-                    cfg.method     = 'mtmfft';
-                    cfg.foilim     = [2 120];
-                    % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 6;
-                    cfg.keeptrials = 'yes';
+
                     freqS    = ft_freqanalysis(cfg, trlDataStmp);
                     
                     % calculate COH in Matched Condition
@@ -1994,6 +1987,8 @@ for iseed = seedIndex
             pMap = zeros(size(metricM,2),size(metricM,3));
             y2plot = zeros(2,size(metricM,2),size(metricM,3));
             se2plot = zeros(2,size(metricM,2),size(metricM,3));
+            yraw = zeros(2,size(metricM,2),size(metricM,3));
+            seraw = zeros(2,size(metricM,2),size(metricM,3));
             
             strlen = 0;
             % TFR point wise LME
@@ -2029,15 +2024,19 @@ for iseed = seedIndex
                     obsVal2 = Ycorr(lmeTBL.Cond=='2');
                     y2plot(:,ifreq,itime) = [mean(obsVal1);mean(obsVal2)];
                     se2plot(:,ifreq,itime) = [std(obsVal1)./sqrt(numel(obsVal1));std(obsVal2)./sqrt(numel(obsVal2))];
-                    
+                    rawVal1 = lmeTBL.Y(lmeTBL.Cond=='1');
+                    rawVal2 = lmeTBL.Y(lmeTBL.Cond=='2');
+                    yraw(:,ifreq,itime) = [mean(rawVal1);mean(rawVal2)];
+                    seraw(:,ifreq,itime) = [std(rawVal1)./sqrt(numel(rawVal1));std(rawVal2)./sqrt(numel(rawVal2))];
+               
                 end
             end
             
             if ~exist([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)],'file')
                 mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)])
             end
-            save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) filesep ...
-                ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot','Para');
+            save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) filesep ROIText{iseed} '_'  ...
+                ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot','yraw','seraw','Para');
             
             
         end
