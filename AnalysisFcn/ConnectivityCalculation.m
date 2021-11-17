@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PAC'
+    calculate = 'PSI'
 end
 
 % initialize base path and toolbox
@@ -650,13 +650,13 @@ for iseed = seedIndex
             end
             
             
-            %% section2-3: calculate Coherence across time frequency%%
+            %% section2-3: calculate Coherence across time frequency (COHtf) %%
             %%%%%%%%%%%%%%%%%%%%%a%%%
             if strcmp(calculate,'COHtf')
                 
                 p=0.05; % threshold for IVC
                 timeWin = 0.5; % unit in second
-                timeStep = 0.1; % unit in second
+                timeStep = 0.05; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -712,7 +712,7 @@ for iseed = seedIndex
                 cfg.trials = find(trlData.trialinfo(:,1)==1);
                 trlDataS = ft_selectdata(cfg,trlData);
                 
-                timeWin = [min(trlData.time{1}) max(trlData.time{1})];
+                timeRange = [min(trlData.time{1}) max(trlData.time{1})];
                 
                 clear trlData
                 
@@ -731,7 +731,7 @@ for iseed = seedIndex
                 in = 1;
                 allcohM = [];
                 allcohS = [];
-                for itw = min(timeWin):timeStep:max(timeWin)-timeWin
+                for itw = min(timeRange):timeStep:max(timeRange)-timeWin
                     
                     % choose time window
                     cfg = [];
@@ -748,7 +748,7 @@ for iseed = seedIndex
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [2 120];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 5;
+                    cfg.tapsmofrq  = 6;
                     cfg.keeptrials = 'yes';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
                     
@@ -757,7 +757,7 @@ for iseed = seedIndex
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [2 120];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 5;
+                    cfg.tapsmofrq  = 6;
                     cfg.keeptrials = 'yes';
                     freqS    = ft_freqanalysis(cfg, trlDataStmp);
                     
@@ -776,7 +776,7 @@ for iseed = seedIndex
                     COHS             = ft_connectivityanalysis(cfg, freqS);
                     allcohS(:,:,in) = COHS.cohspctrm;
                     
-                    timePt(in) = mean([itw 0.5*timeWin]);
+                    timePt(in) = itw+0.5*timeWin;
                     in = in+1;
                 end
                 
@@ -815,14 +815,14 @@ for iseed = seedIndex
                 
             end
             
-            %% section3: calculate Phase Slope Index %%
+            %% section3: calculate Phase Slope Index (PSI)%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%
             if strcmp(calculate,'PSI')
                 
                 timeTFR = 0.002; % time step for time frequency results
-                timeWin = 0.2; % unit in second
+                timeWin = 0.5; % unit in second
                 timeStep = 0.05; % unit in second
-                freqRange = [60 120];
+                freqRange = [20 30];
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -843,7 +843,7 @@ for iseed = seedIndex
                 searchElec = unique(it);
                 
                 % skip if no electrode pair
-                if ~any(seedElec) | ~any(searchElec)
+                if ~any(seedElec) | ~any(searchElec) | isempty(setdiff(seedElec,searchElec))
                     continue
                 end
                 
@@ -883,17 +883,26 @@ for iseed = seedIndex
                 clear trlData
                 
                 
-                %%%---------- hilbert ----------%%%
+                %%%%---------- hilbert ----------%%%%
+                %                 cfg              = [];
+                %                 cfg.output       = 'fourier';
+                %                 cfg.method       = 'hilbert';
+                %                 cfg.foi          = freqRange(1):5:freqRange(2);
+                %                 cfg.width        =  5;
+                %                 cfg.toi          = min(trlDataM.time{1}):timeTFR:max(trlDataM.time{1}); %'all';
+                %                 cfg.keeptrials   = 'yes';
+                %                 cfg.filttype = 'firws';
+                %                 cfg.filtorder = nan;
+                %                 cfg.filtdir = 'onepass-zerophase';
+                %                 cfg.precision = 'single';
+                
+                %%%%---------- wavelet ----------%%%%
                 cfg              = [];
                 cfg.output       = 'fourier';
-                cfg.method       = 'hilbert';
-                cfg.foi          = freqRange(1):5:freqRange(2);
+                cfg.method       = 'wavelet';
+                cfg.foi          = freqRange(1):1:freqRange(2);
                 cfg.width        =  5;
-                cfg.toi          = min(trlDataM.time{1}):timeTFR:max(trlDataM.time{1}); %'all';
-                cfg.keeptrials   = 'yes';
-                cfg.filttype = 'firws';
-                cfg.filtorder = nan;
-                cfg.filtdir = 'onepass-zerophase';
+                cfg.toi          = 'all';
                 cfg.precision = 'single';
                 
                 ft_warning off
@@ -1203,7 +1212,7 @@ for iseed = seedIndex
             if strcmp(calculate,'GrangerTF')
                 
                 p=0.05; % threshold for IVC
-                timeWin = 0.4; % unit in second
+                timeWin = 0.5; % unit in second
                 timeStep = 0.05; % unit in second
                 
                 
@@ -1260,11 +1269,11 @@ for iseed = seedIndex
                 cfg.trials = find(trlData.trialinfo(:,1)==1);
                 trlDataS = ft_selectdata(cfg,trlData);
                 
-                timeWin = [min(trlData.time{1}) max(trlData.time{1})];
+                timeRange = [min(trlData.time{1}) max(trlData.time{1})];
                 
                 clear trlData
                 
-                % calculate pairwise COH
+                % calculate pairwise Granger Causality
                 Npair = 1;
                 allChanCmb = [];
                 duplicateInd = intersect(searchElec,seedElec);
@@ -1279,7 +1288,7 @@ for iseed = seedIndex
                 in = 1;
                 allGrangerM = [];
                 allGrangerS = [];
-                for itw = min(timeWin):timeStep:max(timeWin)-timeWin
+                for itw = min(timeRange):timeStep:max(timeRange)-timeWin
                     
                     % choose time window
                     cfg = [];
@@ -1296,7 +1305,7 @@ for iseed = seedIndex
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [2 120];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 5;
+                    cfg.tapsmofrq  = 7;
                     cfg.keeptrials = 'yes';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
                     
@@ -1305,7 +1314,7 @@ for iseed = seedIndex
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [2 120];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 5;
+                    cfg.tapsmofrq  = 7;
                     cfg.keeptrials = 'yes';
                     freqS    = ft_freqanalysis(cfg, trlDataStmp);
                     
@@ -1350,7 +1359,7 @@ for iseed = seedIndex
                         (grangerS.grangerspctrm(fromInd,:)+grangerS.grangerspctrm(toInd,:));
                     
                     
-                    timePt(in) = mean([itw 0.5*timeWin]);
+                    timePt(in) = itw+0.5*timeWin;
                     in = in+1;
                 end
                 
@@ -1600,7 +1609,7 @@ for iseed = seedIndex
             if strcmp(calculate,'PAC')
                 
                 % calculation parameters
-                pacMethod = 'coh'; % coh,plv,mlv,mi,pac
+                pacMethod = 'mvl'; % coh,plv,mlv,mi,pac
                 timeWin = [0 0.5];
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
@@ -2045,11 +2054,12 @@ for iseed = seedIndex
             CondIndexM = ones(size(subIndexM));
             CondIndexS = 2*ones(size(subIndexS));
             
-            tMap = zeros(1,size(metricM,3));
-            pMap = zeros(1,size(metricM,3));
-            y2plot = zeros(2,size(metricM,3));
-            yraw = zeros(2,size(metricM,3));
-            se2plot = zeros(2,size(metricM,3));
+            tMap = zeros(1,size(allMetricM,2));
+            pMap = zeros(1,size(allMetricM,2));
+            y2plot = zeros(2,size(allMetricM,2));
+            se2plot = zeros(2,size(allMetricM,2));
+            yraw = zeros(2,size(allMetricM,2));
+            seraw = zeros(2,size(allMetricM,2));
             
             strlen = 0;
             % PSI point wise LME
@@ -2091,8 +2101,11 @@ for iseed = seedIndex
                 obsVal1 = Ycorr(lmeTBL.Cond=='1');
                 obsVal2 = Ycorr(lmeTBL.Cond=='2');
                 y2plot(:,itime) = [mean(obsVal1);mean(obsVal2)];
-                yraw(:,itime) = [mean(lmeTBL.Y(lmeTBL.Cond=='1')),mean(lmeTBL.Y(lmeTBL.Cond=='2'))];
                 se2plot(:,itime) = [std(obsVal1)./sqrt(numel(obsVal1));std(obsVal2)./sqrt(numel(obsVal2))];
+                rawVal1 = lmeTBL.Y(lmeTBL.Cond=='1');
+                rawVal2 = lmeTBL.Y(lmeTBL.Cond=='2');
+                yraw(:,itime) = [mean(rawVal1);mean(rawVal2)];
+                seraw(:,itime) = [std(rawVal1)./sqrt(numel(rawVal1));std(rawVal2)./sqrt(numel(rawVal2))];
                 
             end
             
@@ -2100,7 +2113,7 @@ for iseed = seedIndex
                 mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'])
             end
             save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz' filesep ...
-                ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot','yraw','Para');
+                ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot','yraw','seraw','Para');
             
             
         end
@@ -2194,10 +2207,10 @@ for iseed = seedIndex
             
             tMap = zeros(size(metricM,2),size(metricM,3));
             pMap = zeros(size(metricM,2),size(metricM,3));
-            y2plot = zeros(2,size(metricM,32),size(metricM,3));
-            se2plot = zeros(2,size(metricM,32),size(metricM,3));
-            yraw = zeros(2,size(metricM,32),size(metricM,3));
-            seraw = zeros(2,size(metricM,32),size(metricM,3));
+            y2plot = zeros(2,size(metricM,2),size(metricM,3));
+            se2plot = zeros(2,size(metricM,2),size(metricM,3));
+            yraw = zeros(2,size(metricM,2),size(metricM,3));
+            seraw = zeros(2,size(metricM,2),size(metricM,3));
             
             strlen = 0;
             % point wise LME

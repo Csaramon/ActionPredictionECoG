@@ -99,8 +99,7 @@ tMap = tMap';
 pMap = pMap';
 % tMap(tMap==0)=nan;
 % pMap(pMap==0)=nan;
-% ynorm = yraw./(repmat(mean(yraw,3),1,1,size(yraw,3)));
-ynorm = y2plot;
+ynorm = yraw./(mean(yraw))
 cdat = tMap;
 vdat = Para.freqhigh;
 hdat = Para.freqlow;
@@ -113,7 +112,7 @@ clim = [min(cdat(:)) max(cdat(:))];
 % highlight = pMap< 0.05/numel(pMap); 
 
 % FDR  correction
-[p_fdr, p_masked] = fdr(pMap, 0.05,'nonParametric');
+[p_fdr, p_masked] = fdr(pMap, 0.05,'Parametric');
 highlight = p_masked;
 
 % the significant voxels could be outlined with a black contour
@@ -149,16 +148,16 @@ title([filename(1:end-4) ' (Nsub=' num2str(numel(unique(lmeTBL.Sub))) ' Nelec=' 
 ti = find(filename=='_');
 xlabel([filename(1:ti-1) ' Phase (Hz)'])
 ylabel([filename(ti:end) ' Amplitude (Hz)'])
-xlim([4 30])
+
 
 subplot(1,3,1)
-hM = pcolor(hdat,vdat,squeeze(ynorm(1,:,:))');shading interp
+hM = pcolor(hdat,vdat,squeeze(yraw(1,:,:))');shading interp
 ca = get(gca,'CLim');
-xlim([4 30])
+
 subplot(1,3,2)
-hS = pcolor(hdat,vdat,squeeze(ynorm(2,:,:))');shading interp
+hS = pcolor(hdat,vdat,squeeze(yraw(2,:,:))');shading interp
 caxis(ca)
-xlim([4 30])
+
 
 %% plot time frequency Granger Index
 
