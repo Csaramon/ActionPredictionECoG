@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'COHtf'
+    calculate = 'GrangerTF'
 end
 
 % initialize base path and toolbox
@@ -1296,8 +1296,8 @@ for iseed = seedIndex
                     cfg            = [];
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
-                    cfg.foi     = 2:2:120; % need equidistant frequency bins for granger method
-                    cfg.tapsmofrq  = 5;
+                    cfg.foilim     = [2 120]; % need equidistant frequency bins for granger method
+                    cfg.tapsmofrq  = 1;
                     cfg.keeptrials = 'yes';
                     cfg.pad='nextpow2';
                     ft_warning off
@@ -1977,20 +1977,20 @@ for iseed = seedIndex
             CondIndexM = ones(size(subIndexM));
             CondIndexS = 2*ones(size(subIndexS));
             
-            tMap = zeros(size(metricM,2),size(metricM,3));
-            pMap = zeros(size(metricM,2),size(metricM,3));
-            y2plot = zeros(2,size(metricM,2),size(metricM,3));
-            se2plot = zeros(2,size(metricM,2),size(metricM,3));
-            yraw = zeros(2,size(metricM,2),size(metricM,3));
-            seraw = zeros(2,size(metricM,2),size(metricM,3));
+            tMap = zeros(size(allMetricS,2),size(allMetricS,3));
+            pMap = zeros(size(allMetricS,2),size(allMetricS,3));
+            y2plot = zeros(2,size(allMetricS,2),size(allMetricS,3));
+            se2plot = zeros(2,size(allMetricS,2),size(allMetricS,3));
+            yraw = zeros(2,size(allMetricS,2),size(allMetricS,3));
+            seraw = zeros(2,size(allMetricS,2),size(allMetricS,3));
             
             strlen = 0;
             % TFR point wise LME
-            for ifreq = 1:size(metricM,2)
-                for itime = 1:size(metricM,3)
+            for ifreq = 1:size(allMetricM,2)
+                for itime = 1:size(allMetricM,3)
                     
-                    s = ['Calculating tf point: ' num2str(ifreq) '/' num2str(size(metricM,2)) 'freqs, ' ...
-                        num2str(itime) '/' num2str(size(metricM,3)) 'times'];
+                    s = ['Calculating tf point: ' num2str(ifreq) '/' num2str(size(allMetricM,2)) 'freqs, ' ...
+                        num2str(itime) '/' num2str(size(allMetricM,3)) 'times'];
                     strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
                     strlen = strlentmp - strlen;
                     
@@ -2030,7 +2030,7 @@ for iseed = seedIndex
                 mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)])
             end
             save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) filesep ROIText{iseed} '_'  ...
-                ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot','yraw','seraw','Para');
+                ROIText{isearch}],'allMetricM','allMetricS','lmeTBL','tMap','pMap','y2plot','se2plot','yraw','seraw','Para');
             
             
         end

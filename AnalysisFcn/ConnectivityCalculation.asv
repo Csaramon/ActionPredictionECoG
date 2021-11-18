@@ -655,8 +655,8 @@ for iseed = seedIndex
             if strcmp(calculate,'COHtf')
                 
                 p=0.05; % threshold for IVC
-                timeWin = 0.5; % unit in second
-                timeStep = 0.05; % unit in second
+                timeWin = 1; % unit in second
+                timeStep = 0.1; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -748,7 +748,7 @@ for iseed = seedIndex
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [2 120];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 6;
+                    cfg.tapsmofrq  = 5;
                     cfg.keeptrials = 'yes';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
 
@@ -1296,10 +1296,10 @@ for iseed = seedIndex
                     cfg            = [];
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
-                    cfg.foilim     = 2:2:120; % need equidistant frequency bins for granger method
+                    cfg.foilim     = [20 30]; % need equidistant frequency bins for granger method
                     cfg.tapsmofrq  = 5;
                     cfg.keeptrials = 'yes';
-                    cfg.pad='nextpow2'
+                    cfg.pad='nextpow2';
                     ft_warning off
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
 
@@ -1974,20 +1974,24 @@ for iseed = seedIndex
                 continue
             end
             
+            % average over frequencies
+            allMetricM = mean(allMetricM,2);
+            allMetricS = mean(allMetricS,2);
+            
             CondIndexM = ones(size(subIndexM));
             CondIndexS = 2*ones(size(subIndexS));
             
-            tMap = zeros(size(metricM,2),size(metricM,3));
-            pMap = zeros(size(metricM,2),size(metricM,3));
-            y2plot = zeros(2,size(metricM,2),size(metricM,3));
-            se2plot = zeros(2,size(metricM,2),size(metricM,3));
-            yraw = zeros(2,size(metricM,2),size(metricM,3));
-            seraw = zeros(2,size(metricM,2),size(metricM,3));
+            tMap = zeros(size(allMetricS,2),size(allMetricS,3));
+            pMap = zeros(size(allMetricS,2),size(allMetricS,3));
+            y2plot = zeros(2,size(allMetricS,2),size(allMetricS,3));
+            se2plot = zeros(2,size(allMetricS,2),size(allMetricS,3));
+            yraw = zeros(2,size(allMetricS,2),size(allMetricS,3));
+            seraw = zeros(2,size(allMetricS,2),size(allMetricS,3));
             
             strlen = 0;
             % TFR point wise LME
-            for ifreq = 1:size(metricM,2)
-                for itime = 1:size(metricM,3)
+            for ifreq = 1:size(allMetricS,2)
+                for itime = 1:size(allMetricS,3)
                     
                     s = ['Calculating tf point: ' num2str(ifreq) '/' num2str(size(metricM,2)) 'freqs, ' ...
                         num2str(itime) '/' num2str(size(metricM,3)) 'times'];
