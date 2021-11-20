@@ -1,13 +1,20 @@
-%% plot time frequency power
-clear
+
 [filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/TFR/*.mat']);
 
-if ~filterindex 
+if ~filterindex
     return
+else
+    % result data
+    load([pathname filename])
 end
 
-% load in TFR LMEM
-load([pathname filename])
+
+
+
+%% plot time frequency power
+
+if contains(pathname,'TFR')
+
 
 tMap(tMap==0)=nan;
 pMap(pMap==0)=nan;
@@ -81,19 +88,12 @@ set(ch.Label,'string',['S>I    t-value    I>S'],...
 % hS = pcolor(hdat,vdat,squeeze((y2plot(2,:,:)-a(2,:,:))./a(2,:,:)));shading interp
 % caxis(ca)
 
+end
 
 %% plot time frequency PAC
 
-clear
+if contains(pathname,'PAC')
 
-[filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/TFR/*.mat']);
-
-if ~filterindex 
-    return
-end
-
-% load in TFR LMEM
-load([pathname filename])
 
 tMap = tMap';
 pMap = pMap';
@@ -160,24 +160,17 @@ hS = pcolor(hdat,vdat,squeeze(ynorm(2,:,:))');shading interp
 caxis(ca)
 xlim([4 30])
 
+end
 
 %% plot time frequency Coherence
 
-clear
-
-[filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/TFR/*.mat']);
-
-if ~filterindex 
-    return
-end
-
-% load in TFR LMEM
-load([pathname filename])
+if contains(pathname,'COHtf')
 
 tMap(tMap==0)=nan;
 pMap(pMap==0)=nan;
 
 iind = 1:2:119;
+% iind = 1:60;
 
 pMap = pMap(iind,:);
 tMap = tMap(iind,:);
@@ -252,24 +245,17 @@ set(ch.Label,'string',['Low      Coherence      High'],...
 suptitle({'Coherence'; ...
     [filename(1:ti-1) '↔' filename(ti+1:end-4) ' (Nsub=' num2str(numel(unique(lmeTBL.Sub))) ' Nelec=' num2str(numel(unique(lmeTBL.Elec))) ')']});
 
+end
 
 %% plot time frequency Granger Index
 
-clear
-
-[filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/TFR/*.mat']);
-
-if ~filterindex 
-    return
-end
-
-% load in TFR LMEM
-load([pathname filename])
+if contains(pathname,'GrangerTF')
 
 tMap(tMap==0)=nan;
 pMap(pMap==0)=nan;
 
 iind = 1:2:119;
+% iind = 1:61;
 
 pMap = pMap(iind,:);
 tMap = tMap(iind,:);
@@ -282,14 +268,14 @@ hdat = Para.timePT;
 clim = [min(cdat(:)) max(cdat(:))];
 
 % uncorrected
-highlight = pMap< 0.05;
+% highlight = pMap< 0.05;
 
 % Bofforoni  correction
 % highlight = pMap< 0.05/numel(pMap); 
 
 % FDR  correction
-% [p_fdr, p_masked] = fdr(pMap, 0.05,'Parametric');
-% highlight = p_masked;
+[p_fdr, p_masked] = fdr(pMap, 0.05,'Parametric');
+highlight = p_masked;
 
 % the significant voxels could be outlined with a black contour
 % plot outline
@@ -340,5 +326,7 @@ set(ch.Label,'string',['← ' filename(ti+1:end-4) '    From    ' filename(1:ti-
 suptitle({'Granger Index'; ...
     [filename(1:ti-1) '↔' filename(ti+1:end-4) ' (Nsub=' num2str(numel(unique(lmeTBL.Sub))) ' Nelec=' num2str(numel(unique(lmeTBL.Elec))) ')']});
 
+end
 
-
+% save the figure to data location
+saveas(hf,[pathname filename(1:end-4)])

@@ -655,8 +655,8 @@ for iseed = seedIndex
             if strcmp(calculate,'COHtf')
                 
                 p=0.05; % threshold for IVC
-                timeWin = 1; % unit in second
-                timeStep = 0.1; % unit in second
+                timeWin = 0.5; % unit in second
+                timeStep = 0.05; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -748,7 +748,7 @@ for iseed = seedIndex
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [2 120];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 2;
+                    cfg.tapsmofrq  = 4;
                     cfg.keeptrials = 'yes';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
 

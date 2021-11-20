@@ -1205,8 +1205,8 @@ for iseed = seedIndex
             if strcmp(calculate,'GrangerTF')
                 
                 p=0.05; % threshold for IVC
-                timeWin = 1; % unit in second
-                timeStep = 0.1; % unit in second
+                timeWin = 0.5; % unit in second
+                timeStep = 0.05; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -1297,7 +1297,7 @@ for iseed = seedIndex
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [2 120]; % need equidistant frequency bins for granger method
-                    cfg.tapsmofrq  = 1;
+                    cfg.tapsmofrq  = 4;
                     cfg.keeptrials = 'yes';
                     cfg.pad='nextpow2';
                     ft_warning off
