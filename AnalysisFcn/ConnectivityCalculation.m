@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PSItf'
+    calculate = 'mvgc'
 end
 
 % initialize base path and toolbox
@@ -47,8 +47,8 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1 3 7];
-searchIndex = [1 3 7];
+seedIndex = [1];
+searchIndex = [7];
 icontrol = [3];
 allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
@@ -1161,7 +1161,7 @@ for iseed = seedIndex
                 
             end
             
-            %% section4: calculate multivariate granger causality (MVGC) %%
+             %% section4: calculate multivariate granger causality (MVGC) %%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             if strcmp(calculate,'mvgc')
@@ -1173,7 +1173,7 @@ for iseed = seedIndex
                     run C:\Users\qin2\Documents\MATLAB\toolbox\tools\mvgc_v1.0\startup.m
                 end
                 % time window use to calculate
-                timeWin = [0 1]; % unit in second
+                timeWin = [-0.5 0.5]; % unit in second
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1208,10 +1208,10 @@ for iseed = seedIndex
                 
                 trlData = ft_preprocessing(cfg,trlData);
                 % Downsample Data
-                cfg = [];
-                cfg.resamplefs = 250;
-                cfg.detrend         = 'no';
-                [trlData] = ft_resampledata(cfg, trlData);
+%                 cfg = [];
+%                 cfg.resamplefs = 250;
+%                 cfg.detrend         = 'no';
+%                 [trlData] = ft_resampledata(cfg, trlData);
                 
                 badChanInd = trlData.trial{1,1}(seedElec,1)==0;
                 seedElec(badChanInd) = [];
@@ -1256,7 +1256,9 @@ for iseed = seedIndex
                 
                 time2cal  = trlDataM.time{1}>=min(timeWin) & trlDataM.time{1}<=max(timeWin);
                 
-                controlElec = []; % to do pairwise
+                %%%%---- to do pairwise ----%%%%
+%                 controlElec = []; 
+                %%%%---- to do pairwise ----%%%%
                 if isempty(controlElec)
                     % calculate connectivity metric with two regions
                     for iseedElec = seedElec'
