@@ -231,20 +231,21 @@ end
 
 % load in TFR LMEM
 load([pathname filename])
-% y2plot = y2raw;
-% Para.freq = Para.timePT;
-tMap(tMap==0)=nan;
-pMap(pMap==0)=nan;
+y2plot = yraw;
+se2plot = seraw;
+
+% tMap(tMap==0)=nan;
+% pMap(pMap==0)=nan;
 
 % uncorrected
-highlight = double(pMap< 0.05);
+% highlight = double(pMap< 0.05);
 
 % Bofforoni  correction
 % highlight = pMap< 0.05/numel(pMap); 
 
 % FDR  correction
-% [p_fdr, p_masked] = fdr(pMap, 0.05);
-% highlight = p_masked;
+[p_fdr, p_masked] = fdr(pMap, 0.05);
+highlight = p_masked;
 
 % remove significant clusters shorter than 100ms
 % Ls = bwconncomp(highlight,4);
@@ -276,7 +277,8 @@ ylabel([filename(1:ti-1) ' to Granger Index from ' filename(1:ti-1)])
 xlim([1 120])
 ylim([-1.5*max(abs(y2plot(:))),1.5*max(abs(y2plot(:)))])
       
-
+% save the figure to data location
+saveas(hf,[pathname filename(1:end-4)])
       
 %% plot PSI
 clear;
@@ -333,3 +335,5 @@ plot([0,0],get(gca,'ylim'),'k--')
 legend([hM.mainLine,hS.mainLine,hsig], ...
     ['Intact'],['Scrambled'],['P<0.05 (corrected)']);
       
+% save the figure to data location
+saveas(hf,[pathname filename(1:end-4)])
