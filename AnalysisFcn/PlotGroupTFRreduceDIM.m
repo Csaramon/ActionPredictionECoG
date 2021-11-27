@@ -1,6 +1,14 @@
 %% plot time-frequency data after reducing dimension
 
-foi  = Para.freq>24 & Para.freq<25;
+foi  = Para.freq>60 & Para.freq<90;
+MetricM = squeeze(mean(allMetricM(:,foi,:),2));
+MetricS = squeeze(mean(allMetricS(:,foi,:),2));
+x2plot = Para.timePT;
+
+% toi = Para.timePT > 0.45 & Para.timePT < 0.55;
+% MetricM = squeeze(nanmean(allMetricM(:,:,toi),3));
+% MetricS = squeeze(nanmean(allMetricS(:,:,toi),3));
+% x2plot = Para.freq;
 
 tMap = [];
 pMap = [];
@@ -12,22 +20,26 @@ seraw = [];
 
 strlen = 0;
 
-for itime = 1:size(allMetricM,3)
+for itime = 1:size(MetricM,2)
     
-    s = ['Calculating tf point:' num2str(itime) '/' num2str(size(allMetricM,3)) 'times'];
+    s = ['Calculating tf point:' num2str(itime) '/' num2str(size(MetricM,2)) 'points'];
     strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
     strlen = strlentmp - strlen;
     
-    frameDataM = double(squeeze(mean(allMetricM(:,foi,itime),2)));
+    frameDataM = double(MetricM(:,itime));
+    frameDataS = double(MetricS(:,itime));
     % skip nan point
     if ~any(frameDataM,'all')
         continue
     end
-    frameDataS = double(squeeze(mean(allMetricS(:,foi,itime),2)));
-    
     
     lmeTBL.Y = [frameDataM;frameDataS];
+    
+    
     lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
+    
+%     lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec1)+(1|Elec2)+(1|Elec1:Elec2)','fitmethod','reml','DummyVarCoding','effects');
+    
     [~,~,lmeStats] = fixedEffects(lmeStruct);
     tMap(1,itime) = lmeStats.tStat(2);
     pMap(1,itime) = lmeStats.pValue(2);
@@ -59,11 +71,12 @@ highlight(highlight==0) = nan;
 hf = figure;
 
 hold on
-hM = shadedErrorBar(Para.timePT, yraw(1,:),seraw(1,:),{'color',[255 106 106]/255},1);
-hS = shadedErrorBar(Para.timePT, yraw(2,:), seraw(2,:),{'color',[30 144 255]/255},1);
-hsig = plot(Para.timePT,(max(yraw(:))+0.2*range(yraw(:)))*highlight,'k*');
+hM = shadedErrorBar(x2plot, yraw(1,:),seraw(1,:),{'color',[255 106 106]/255},1);
+hS = shadedErrorBar(x2plot, yraw(2,:), seraw(2,:),{'color',[30 144 255]/255},1);
+
+hsig = plot(x2plot,(max(yraw(:))+0.2*range(yraw(:)))*highlight,'k*');
 title(filename(1:end-4))
-xlim([-0.8 1.2])
+% xlim([-0.8 1.2])
 ylim([-2*max(abs(yraw(:))),2*max(abs(yraw(:)))])
 plot([0,0],get(gca,'ylim'),'k--')
 legend([hM.mainLine,hS.mainLine,hsig], ...

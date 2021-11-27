@@ -579,8 +579,8 @@ for iatlas = [1,3,7,8,9]%1:numel(ROIIndex) %[1,3,7,8,9]
             cfg            = [];
             cfg.output     = 'pow';
             cfg.method     = 'mtmfft';
-%             cfg.foilim     = [2 120];
-            cfg.foi          = 2:1:120; %logspace(log10(2),log10(128),32);
+            cfg.foilim     = [2 120];
+            % cfg.foi          = logspace(log10(2),log10(128),32);
             %                     cfg.taper      =  'hanning';
             cfg.tapsmofrq  = 5;
             cfg.keeptrials = 'no';
@@ -607,7 +607,6 @@ for iatlas = [1,3,7,8,9]%1:numel(ROIIndex) %[1,3,7,8,9]
             
             Para.elecposMNI = [Para.elecposMNI;freqM.elec.elecposMNI(ROIelec,:)];
             Para.timeRange = timeRange;
-            Para.freq = freqM.freq;
             
             nelec = nelec+numel(ROIelec);
         end
@@ -1129,19 +1128,19 @@ for iatlas = [1,3,7,8,9]%1:numel(ROIIndex) %[1,3,7,8,9]
         CondIndexS = 2*ones(size(subIndexS));
 
         
-        tMap = zeros(1,size(allMetricM,2));
-        pMap = zeros(1,size(allMetricM,2));
-        y2plot = zeros(2,size(allMetricM,2));
-        se2plot = zeros(2,size(allMetricM,2));
-        yraw = zeros(2,size(allMetricM,2));
-        seraw = zeros(2,size(allMetricM,2));
+        tMap = zeros(1,size(metricM,3));
+        pMap = zeros(1,size(metricM,3));
+        y2plot = zeros(2,size(metricM,3));
+        se2plot = zeros(2,size(metricM,3));
+        yraw = zeros(2,size(allMetricM,3));
+        seraw = zeros(2,size(allMetricM,3));
         
         strlen = 0;
         % TFR point wise LME
         
-        for itime = 1:size(allMetricM,2)
+        for itime = 1:size(allMetricM,3)
             
-            s = ['Calculating tf point: ' num2str(itime) '/' num2str(size(allMetricM,2)) 'times'];
+            s = ['Calculating tf point: ' num2str(itime) '/' num2str(size(metricM,3)) 'times'];
             strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
             strlen = strlentmp - strlen;
             
@@ -1159,7 +1158,7 @@ for iatlas = [1,3,7,8,9]%1:numel(ROIIndex) %[1,3,7,8,9]
             lmeTBL.Sub = nominal(lmeTBL.Sub);
             lmeTBL.Elec = nominal(lmeTBL.Elec);
             
-            lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
+            lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)+(1|Trl)','fitmethod','reml','DummyVarCoding','effects');
             [~,~,lmeStats] = fixedEffects(lmeStruct);
             tMap(1,itime) = lmeStats.tStat(2);
             pMap(1,itime) = lmeStats.pValue(2);

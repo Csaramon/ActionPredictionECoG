@@ -169,8 +169,8 @@ if contains(pathname,'COHtf')
 tMap(tMap==0)=nan;
 pMap(pMap==0)=nan;
 
-
-iind = 1:1:numel(Para.freq);
+% iind = 1:1:119;
+iind = 1:numel(Para.freq);
 
 pMap = pMap(iind,:);
 tMap = tMap(iind,:);
@@ -336,8 +336,8 @@ if contains(pathname,'PSItf')
 tMap(tMap==0)=nan;
 pMap(pMap==0)=nan;
 
-iind = 1:1:numel(Para.freq);
-
+iind = 1:1:130;
+% iind = 1:61;
 
 pMap = pMap(iind,:);
 tMap = tMap(iind,:);
@@ -350,14 +350,14 @@ hdat = Para.timePT;
 clim = [min(cdat(:)) max(cdat(:))];
 
 % uncorrected
-% highlight = pMap< 0.05;
+highlight = pMap< 0.05;
 
 % Bofforoni  correction
 % highlight = pMap< 0.05/numel(pMap); 
 
 % FDR  correction
-[p_fdr, p_masked] = fdr(pMap, 0.05,'Parametric');
-highlight = p_masked;
+% [p_fdr, p_masked] = fdr(pMap, 0.05,'Parametric');
+% highlight = p_masked;
 
 % the significant voxels could be outlined with a black contour
 % plot outline

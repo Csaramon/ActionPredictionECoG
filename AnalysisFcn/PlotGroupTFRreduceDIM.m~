@@ -1,27 +1,35 @@
 %% plot time-frequency data after reducing dimension
 
-foi  = Para.freq>20 & Para.freq<30;
+foi  = Para.freq>70 & Para.freq<90;
+toi = Para.timePT > 0.35 & Para.timePT > 0.35
+MetricM = squeeze(mean(allMetricM(:,foi,:),2));
+MetricS = squeeze(mean(allMetricS(:,foi,:),2));
+
+MetricM = squeeze(mean(allMetricM(:,foi,:),2));
+MetricS = squeeze(mean(allMetricS(:,foi,:),2));
 
 tMap = [];
 pMap = [];
+y2plot = [];
+se2plot = [];
 yraw = [];
 seraw = [];
 
 
 strlen = 0;
 
-for itime = 1:size(allMetricM,3)
+for itime = 1:size(MetricM,2)
     
-    s = ['Calculating tf point:' num2str(itime) '/' num2str(size(allMetricM,3)) 'times'];
+    s = ['Calculating tf point:' num2str(itime) '/' num2str(size(MetricM,2)) 'points'];
     strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
     strlen = strlentmp - strlen;
     
-    frameDataM = double(squeeze(mean(allMetricM(:,foi,itime),2)));
+    frameDataM = double(MetricM(:,itime));
+    frameDataS = double(MetricS(:,itime));
     % skip nan point
     if ~any(frameDataM,'all')
         continue
     end
-    frameDataS = double(squeeze(mean(allMetricS(:,foi,itime),2)));
     
     
     lmeTBL.Y = [frameDataM;frameDataS];
@@ -57,17 +65,20 @@ highlight(highlight==0) = nan;
 hf = figure;
 
 hold on
-hM = shadedErrorBar(Para.time, y2plot(1,:),se2plot(1,:),{'color',[255 106 106]/255},1);
-hS = shadedErrorBar(Para.time, y2plot(2,:), se2plot(2,:),{'color',[30 144 255]/255},1);
-hsig = plot(Para.time,(max(y2plot(:))+0.1*range(y2plot(:)))*highlight,'k*');
+hM = shadedErrorBar(Para.timePT, yraw(1,:),seraw(1,:),{'color',[255 106 106]/255},1);
+hS = shadedErrorBar(Para.timePT, yraw(2,:), seraw(2,:),{'color',[30 144 255]/255},1);
+hsig = plot(Para.timePT,(max(yraw(:))+0.2*range(yraw(:)))*highlight,'k*');
 title(filename(1:end-4))
-xlim([-0.5 1])
-ylim([-1.5*max(abs(y2plot(:))),1.5*max(abs(y2plot(:)))])
-ti = find(filename=='_');
-xlabel('Time relative to camera change (sec)')
-ylabel([filename(1:ti-1) ' lead    PSI    from ' filename(1:ti-1)])
+xlim([-0.8 1.2])
+ylim([-2*max(abs(yraw(:))),2*max(abs(yraw(:)))])
 plot([0,0],get(gca,'ylim'),'k--')
-
 legend([hM.mainLine,hS.mainLine,hsig], ...
     ['Intact'],['Scrambled'],['P<0.05 (corrected)']);
+
+ti = find(filename=='_');
+xlabel('Time relative to camera change (sec)')
+ylabel([filename(1:ti-1) ' from    PSI    from ' filename(ti+1:end-4)])
+
+
+
       

@@ -1104,7 +1104,7 @@ for iseed = seedIndex
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [1 130];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 4;
+                    cfg.tapsmofrq  = 3;
                     cfg.keeptrials = 'yes';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
                     
@@ -1113,7 +1113,7 @@ for iseed = seedIndex
                     % calculate PSI in Matched Condition
                     cfg            = [];
                     cfg.method     = 'psi';
-                    cfg.bandwidth = 4;
+                    cfg.bandwidth = 5;
                     cfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
                     PSIM             = ft_connectivityanalysis(cfg, freqM);
                     allPSIM(:,:,in) = PSIM.psispctrm;

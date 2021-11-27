@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'mvgc'
+    calculate = 'COHtf'
 end
 
 % initialize base path and toolbox
@@ -47,9 +47,9 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1];
-searchIndex = [7];
-icontrol = [3];
+seedIndex = [1 3 7];
+searchIndex = [1 3 7];
+icontrol = [7];
 allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
     for isearch = searchIndex
@@ -748,8 +748,10 @@ for iseed = seedIndex
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [2 120];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 3;
+%                     cfg.taper      =  'hanning';
+                    cfg.tapsmofrq  = 5;
                     cfg.keeptrials = 'yes';
+                    cfg.pad='nextpow2';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
                     
                     freqS    = ft_freqanalysis(cfg, trlDataStmp);
@@ -757,7 +759,7 @@ for iseed = seedIndex
                     % calculate COH in Matched Condition
                     cfg            = [];
                     cfg.method     = 'coh';
-                                    cfg.complex = 'absimag';
+                    cfg.complex = 'absimag';
                     cfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
                     COHM             = ft_connectivityanalysis(cfg, freqM);
                     allcohM(:,:,in) = COHM.cohspctrm;
@@ -782,10 +784,11 @@ for iseed = seedIndex
                 metricM = allcohM;
                 metricS = allcohS;
                 
+                %                 elecIndexM =  cat(1,elecIndexM,isub*1000+allChanCmb);
                 elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-2]');
                 subIndexM = cat(1,subIndexM,repmat(isub,Npair-1,1));
                 
-                
+                %                 elecIndexS = cat(1,elecIndexS,isub*1000+allChanCmb);
                 elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-2]');
                 subIndexS = cat(1,subIndexS,repmat(isub,Npair-1,1));
                 
@@ -1104,7 +1107,7 @@ for iseed = seedIndex
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [1 130];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 4;
+                    cfg.tapsmofrq  = 3;
                     cfg.keeptrials = 'yes';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
                     
@@ -1257,7 +1260,7 @@ for iseed = seedIndex
                 time2cal  = trlDataM.time{1}>=min(timeWin) & trlDataM.time{1}<=max(timeWin);
                 
                 %%%%---- to do pairwise ----%%%%
-%                 controlElec = []; 
+                controlElec = []; 
                 %%%%---- to do pairwise ----%%%%
                 if isempty(controlElec)
                     % calculate connectivity metric with two regions
@@ -2158,13 +2161,23 @@ for iseed = seedIndex
                     frameDataS = double(squeeze(allMetricS(:,ifreq,itime)));
                     
                     
-                    lmeTBL = table([frameDataM;frameDataS],[CondIndexM;CondIndexS],[subIndexM;subIndexS], ...
-                        [elecIndexM;elecIndexS], 'VariableNames',{'Y','Cond','Sub','Elec'});
-                    lmeTBL.Cond = nominal(lmeTBL.Cond);
-                    lmeTBL.Sub = nominal(lmeTBL.Sub);
-                    lmeTBL.Elec = nominal(lmeTBL.Elec);
-                    lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
-                    [~,~,lmeStats] = fixedEffects(lmeStruct);
+                lmeTBL = table([frameDataM;frameDataS],[CondIndexM;CondIndexS],[subIndexM;subIndexS], ...
+                    [elecIndexM;elecIndexS], 'VariableNames',{'Y','Cond','Sub','Elec'});
+                lmeTBL.Cond = nominal(lmeTBL.Cond);
+                lmeTBL.Sub = nominal(lmeTBL.Sub);
+                lmeTBL.Elec = nominal(lmeTBL.Elec);
+                lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
+                
+%                                                 lmeTBL = table([frameDataM;frameDataS],[CondIndexM;CondIndexS],[subIndexM;subIndexS], ...
+%                                                     [elecIndexM(:,1);elecIndexS(:,1)], [elecIndexM(:,2);elecIndexS(:,2)], 'VariableNames',{'Y','Cond','Sub','Elec1','Elec2'});
+%                                                 lmeTBL.Cond = nominal(lmeTBL.Cond);
+%                                                 lmeTBL.Sub = nominal(lmeTBL.Sub);
+%                                                 lmeTBL.Elec1 = nominal(lmeTBL.Elec1);
+%                                                 lmeTBL.Elec2 = nominal(lmeTBL.Elec2);
+%                                                 lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec1:Elec2)','fitmethod','reml','DummyVarCoding','effects');
+%                                   
+                                                [~,~,lmeStats] = fixedEffects(lmeStruct);
+                
                     tMap(ifreq,itime) = lmeStats.tStat(2);
                     pMap(ifreq,itime) = lmeStats.pValue(2);
                     [randBeta,~,~] = randomEffects(lmeStruct);
