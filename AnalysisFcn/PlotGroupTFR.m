@@ -1,4 +1,6 @@
 
+clear;
+
 [filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/TFR/*.mat']);
 
 if ~filterindex

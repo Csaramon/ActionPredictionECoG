@@ -1,6 +1,6 @@
 %% plot time-frequency data after reducing dimension
 
-foi  = Para.freq>60 & Para.freq<90;
+foi  = Para.freq>60 & Para.freq<85;
 MetricM = squeeze(mean(allMetricM(:,foi,:),2));
 MetricS = squeeze(mean(allMetricS(:,foi,:),2));
 x2plot = Para.timePT;

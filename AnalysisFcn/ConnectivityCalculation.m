@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'COHtf'
+    calculate = 'PSItf'
 end
 
 % initialize base path and toolbox
@@ -1107,7 +1107,7 @@ for iseed = seedIndex
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [1 130];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 3;
+                    cfg.tapsmofrq  = 5;
                     cfg.keeptrials = 'yes';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
                     
@@ -1116,7 +1116,7 @@ for iseed = seedIndex
                     % calculate PSI in Matched Condition
                     cfg            = [];
                     cfg.method     = 'psi';
-                    cfg.bandwidth = 5;
+                    cfg.bandwidth = 10;
                     cfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
                     PSIM             = ft_connectivityanalysis(cfg, freqM);
                     allPSIM(:,:,in) = PSIM.psispctrm;

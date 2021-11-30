@@ -2,7 +2,7 @@ function varargout = batchCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'PSD'
+    calculate = 'PSDmovie'
 end
 
 % initialize base path and toolbox
@@ -579,7 +579,7 @@ for iatlas = [1,3,7,8,9]%1:numel(ROIIndex) %[1,3,7,8,9]
             cfg            = [];
             cfg.output     = 'pow';
             cfg.method     = 'mtmfft';
-%             cfg.foilim     = [2 120];
+            %             cfg.foilim     = [2 120];
             cfg.foi          = 2:1:120; %logspace(log10(2),log10(128),32);
             %                     cfg.taper      =  'hanning';
             cfg.tapsmofrq  = 5;
@@ -608,6 +608,121 @@ for iatlas = [1,3,7,8,9]%1:numel(ROIIndex) %[1,3,7,8,9]
             Para.elecposMNI = [Para.elecposMNI;freqM.elec.elecposMNI(ROIelec,:)];
             Para.timeRange = timeRange;
             Para.freq = freqM.freq;
+            
+            nelec = nelec+numel(ROIelec);
+        end
+        
+        
+        %% section3-3: calculate power spectrum difference of all movie %%
+        %%%%%%%%%%%%%%%%%%%%%%%%
+        if strcmp(calculate,'PSDmovie')
+            
+            %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            if exist([dataPath subname 'LAR_rerefData.mat'],'file')
+                a = load([dataPath subname 'LAR_rerefData']);
+            end
+            c = fieldnames(a);
+            rerefData = a.(c{1});
+            
+            % choose ROI electrodes according to MNI coordinates
+            elecposMNI = rerefData.elec.elecposMNI;
+            tempdev = pdist2(elecposMNI,aparc_coordiantes);
+            [it,~] = find(tempdev <=roiDist);
+            ROIelec = unique(it);
+            
+            % skip if no electrode pair
+            if ~any(ROIelec)
+                continue
+            end
+            
+            if exist([dataPath subname '_eventdata.mat'],'file')
+                a = load([dataPath subname '_eventdata']);
+            end
+            c = fieldnames(a);
+            camInfo = a.(c{1});
+            
+            % downsampling data and eventdata
+            cfg = [];
+            cfg.resamplefs = 500;
+            cfg.detrend         = 'yes';
+            cfg.demean         = 'yes';
+            rerefData = ft_resampledata(cfg, rerefData);
+            fs = rerefData.fsample;
+            camInfo(:,4) = num2cell(cell2mat(camInfo(:,4))./1000);
+            
+            foi          = logspace(log10(2),log10(128),32);
+            width        =  logspace(log10(3),log10(10),32); % adjustive cycles
+            
+            % time-frequency decomposition (wavelet)
+%             cfg              = [];
+%             cfg.output       = 'pow';
+%             cfg.method       = 'wavelet';
+%             cfg.foi          = 2:1:120;
+%             cfg.width        =  7;
+%             cfg.toi          = min(rerefData.time{1}):0.1:max(rerefData.time{1});
+%             cfg.precision = 'single';
+%             cfg.pad='nextpow2';
+            
+                    % time-frequency decomposition (multi-taper) 
+                    cfg              = [];
+                    cfg.output       = 'pow';
+                    cfg.method       = 'mtmconvol';
+                    cfg.foi          = 2:1:120;
+                    cfg.t_ftimwin  = 5./cfg.foi;
+                    cfg.tapsmofrq  = 0.4 *cfg.foi; % tapers=2*tw*fw-1
+                    cfg.toi          = min(rerefData.time{1}):0.1:max(rerefData.time{1});
+                    cfg.precision = 'single';
+                    cfg.pad='nextpow2';
+            
+            ft_warning off
+            freq = ft_freqanalysis(cfg,rerefData);
+            
+            clear rerefData
+            
+            allTS = freq.powspctrm(ROIelec,:,:);
+            
+            % predefine variable for the reconcantenate time series
+            tsI = [];
+            tsS = [];
+            %%%%-------- reconcatenate data movie clip-wise and condition-wise --------%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            for im = 1:size(camInfo,1)
+                
+                timeInd = freq.time >= camInfo{im,4} & freq.time <= (camInfo{im,4}+camInfo{im,6});
+                % extract data of each movie
+                tmpTS = allTS(:,:,timeInd);
+                
+                
+                % concatenate data according to condition
+                if camInfo{im,1}==0
+                    tsI=cat(3,tsI,mean(tmpTS,3,'omitnan'));
+                elseif camInfo{im,1}==1
+                    tsS=cat(3,tsS,mean(tmpTS,3,'omitnan'));
+                end
+                
+                
+                
+            end
+            
+            % generate index of Subject Electrode and Trial for LME
+            metricM = mean(tsI,3);
+            metricS = mean(tsS,3);
+            
+            %                 elecIndexM =  cat(1,elecIndexM,isub*1000+allChanCmb);
+            elecIndexM =  cat(1,elecIndexM,[nelec:nelec+numel(ROIelec)-1]');
+            subIndexM = cat(1,subIndexM,repmat(isub,numel(ROIelec),1));
+            
+            %                 elecIndexS = cat(1,elecIndexS,isub*1000+allChanCmb);
+            elecIndexS = cat(1,elecIndexS,[nelec:nelec+numel(ROIelec)-1]');
+            subIndexS = cat(1,subIndexS,repmat(isub,numel(ROIelec),1));
+            
+            % concontenate all trial responses in chosen ROI
+            allMetricM = cat(1,allMetricM,metricM);
+            allMetricS = cat(1,allMetricS,metricS);
+            
+            Para.elecposMNI = [Para.elecposMNI;freq.elec.elecposMNI(ROIelec,:)];
+            Para.freq = freq.freq;
             
             nelec = nelec+numel(ROIelec);
         end
@@ -1122,12 +1237,12 @@ for iatlas = [1,3,7,8,9]%1:numel(ROIIndex) %[1,3,7,8,9]
     end
     
     
-    %% section1: calculate event related potiential %%
+    %% section3-2: calculate power spectrum difference %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if strcmp(calculate,'PSD')
+    if strcmp(calculate,'PSD') | strcmp(calculate,'PSDmovie')
         CondIndexM = ones(size(subIndexM));
         CondIndexS = 2*ones(size(subIndexS));
-
+        
         
         tMap = zeros(1,size(allMetricM,2));
         pMap = zeros(1,size(allMetricM,2));
