@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PSItf'
+    calculate = 'COHtf'
 end
 
 % initialize base path and toolbox
@@ -547,10 +547,14 @@ for iseed = seedIndex
             if strcmp(calculate,'COHtrl')
                 
                 p=0.05; % threshold for IVC
+                freqRange = [24 29];
+                timeWin = 1; % unit in second
+                timeStep = 0.05; % unit in second
+                
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([resultPath 'TFR' filesep subname filesep 'FreqData.mat']);
+                datafile = dir([dataPath subname 'LAR_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
@@ -562,77 +566,114 @@ for iseed = seedIndex
                     IVC.Scamble.alpha(:,2)<p | IVC.Scamble.beta(:,2)<p | IVC.Scamble.lgamma(:,2)<p | IVC.Scamble.hgamma(:,2)<p);
                 
                 % choose seed electrodes according to MNI coordinates
-                elecposMNI = freqM.elec.elecposMNI;
+                elecposMNI = trlData.elec.elecposMNI;
                 tempdev = pdist2(elecposMNI,seed_coordiantes);
                 [it,~] = find(tempdev <=roiDist);
                 seedElec = unique(it);
-                seedElec = intersect(seedElec,respElecInd);
+                %                 seedElec = intersect(seedElec,respElecInd);
                 
                 % choose search electrodes according to MNI coordinates
                 tempdev = pdist2(elecposMNI,search_coordiantes);
                 [it,~] = find(tempdev <=roiDist);
                 searchElec = unique(it);
-                searchElec = intersect(searchElec,respElecInd);
+                %                 searchElec = intersect(searchElec,respElecInd);
+                
+                cfg = [];
+                cfg.demean = 'yes';
+                cfg.detrend = 'yes';
+                
+                trlData = ft_preprocessing(cfg,trlData);
+                
+                % skip bad channels
+                badChanInd = trlData.trial{1,1}(seedElec,1)==0;
+                seedElec(badChanInd) = [];
+                
+                badChanInd = trlData.trial{1,1}(searchElec,1)==0;
+                searchElec(badChanInd) = [];
                 
                 % skip if no electrode pair
-                if ~any(seedElec) | ~any(searchElec)
+                if ~any(seedElec) | ~any(searchElec) | isempty(setdiff(seedElec,searchElec))
                     continue
                 end
                 
+                % seperate conditions
+                cfg = [];
+                cfg.trials = find(trlData.trialinfo(:,1)==0);
+                trlDataM = ft_selectdata(cfg,trlData);
+                
+                cfg = [];
+                cfg.trials = find(trlData.trialinfo(:,1)==1);
+                trlDataS = ft_selectdata(cfg,trlData);
+                
+                timeRange = [min(trlData.time{1}) max(trlData.time{1})];
+                
+                clear trlData
                 
                 % calculate pairwise COH
-                allCOHM = [];
-                allCOHS = [];
                 Npair = 1;
                 allChanCmb = [];
-                timePoint = [];
-                % calculate connectivity metric
-                for iseedElec = seedElec'
-                    for isearchElec = searchElec'
-                        % ignore electrodes with zero values
-                        if ~any(freqM.fourierspctrm(:,iseedElec,:,:)) | ~any(freqM.fourierspctrm(:,isearchElec,:,:))
-                            continue
-                        end
-                        
-                        % calculate COH in Matched Condition
-                        allChanCmb = [allChanCmb;[iseedElec isearchElec]];
-                        COHseriesM = zeros(numel(freqM.freq),numel(freqM.time));
-                        for ifreq = 1:numel(freqM.freq)
-                            seedFourierM = squeeze(freqM.fourierspctrm(:,iseedElec,ifreq,:))';
-                            searchFourierM = squeeze(freqM.fourierspctrm(:,isearchElec,ifreq,:))';
-                            spec1 = nanmean(seedFourierM.*conj(seedFourierM),2);
-                            spec2 = nanmean(searchFourierM.*conj(searchFourierM),2);
-                            specX = abs(nanmean(seedFourierM.*conj(searchFourierM),2)).^2;
-                            COHseriesM(ifreq,:) = specX./(spec1.*spec2);
-                        end
-                        allCOHM(Npair,:,:) = COHseriesM;
-                        
-                        % calculate COH in Scrambled Condition
-                        COHseriesS = zeros(numel(freqS.freq),numel(freqS.time));
-                        for ifreq = 1:numel(freqS.freq)
-                            seedFourierS = squeeze(freqS.fourierspctrm(:,iseedElec,ifreq,:))';
-                            searchFourierS = squeeze(freqS.fourierspctrm(:,isearchElec,ifreq,:))';
-                            spec1 = nanmean(seedFourierS.*conj(seedFourierS),2);
-                            spec2 = nanmean(searchFourierS.*conj(searchFourierS),2);
-                            specX = abs(nanmean(seedFourierS.*conj(searchFourierS),2)).^2;
-                            COHseriesS(ifreq,:) = specX./(spec1.*spec2);
-                        end
-                        allCOHS(Npair,:,:) = COHseriesS;
-                        
-                        % count for pairs of eletrodes
-                        Npair = Npair + 1;
+                duplicateInd = intersect(searchElec,seedElec);
+                if ~isempty(duplicateInd)
+                    if numel(searchElec) > numel(seedElec)
+                        searchElec = setdiff(searchElec,duplicateInd);
+                    else
+                        seedElec = setdiff(seedElec,duplicateInd);
                     end
                 end
                 
+                in = 1;
+                allcohM = [];
+                allcohS = [];
+                
+                
+                
+                % wavelet time frequency analysis
+                cfg              = [];
+                cfg.output       = 'fourier';
+                cfg.method       = 'wavelet';
+                cfg.foi          = min(freqRange):max(freqRange);
+                cfg.width      = 7;
+                cfg.toi          = min(trlDataM.time{1}):timeStep:max(trlDataM.time{1}); %'all';
+                cfg.pad = 'nextpow2';
+                cfg.keeptrials = 'yes';
+                ft_warning off
+                
+                
+                freqM    = ft_freqanalysis(cfg, trlDataM);
+                
+                freqS    = ft_freqanalysis(cfg, trlDataS);
+                
+                % calculate COH in Matched Condition
+                cfg            = [];
+                cfg.method     = 'coh';
+                cfg.complex = 'absimag';
+                cfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
+                COHM             = ft_connectivityanalysis(cfg, freqM);
+                allcohM = COHM.cohspctrm;
+                % calculate COH in Scambled Condition
+                cfg.channelcmb = {trlDataS.label(seedElec) trlDataS.label(searchElec)};
+                COHS             = ft_connectivityanalysis(cfg, freqS);
+                allcohS = COHS.cohspctrm;
+                
+                
+                
+                allChanCmb = [allChanCmb;COHM.labelcmb];
+                
+                
+                % count for pairs of eletrodes
+                Npair = Npair + size(COHM.labelcmb,1);
+                
+                
                 
                 % generate index for Subject Electrode and Trial
-                metricM = allCOHM;
-                metricS = allCOHS;
+                metricM = allcohM;
+                metricS = allcohS;
                 
+                %                 elecIndexM =  cat(1,elecIndexM,isub*1000+allChanCmb);
                 elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-2]');
                 subIndexM = cat(1,subIndexM,repmat(isub,Npair-1,1));
                 
-                
+                %                 elecIndexS = cat(1,elecIndexS,isub*1000+allChanCmb);
                 elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-2]');
                 subIndexS = cat(1,subIndexS,repmat(isub,Npair-1,1));
                 
@@ -640,11 +681,13 @@ for iseed = seedIndex
                 allMetricM = cat(1,allMetricM,metricM);
                 allMetricS = cat(1,allMetricS,metricS);
                 
+                
                 Para.chanCMB{isub} = allChanCmb;
+                Para.timeWin = timeWin;
+                Para.timeStep = timeStep;
                 Para.time = freqM.time;
                 Para.freq = freqM.freq;
                 nelec = nelec+Npair-1;
-                
                 
                 
             end
@@ -656,7 +699,7 @@ for iseed = seedIndex
                 
                 p=0.05; % threshold for IVC
                 timeWin = 1; % unit in second
-                timeStep = 0.1; % unit in second
+                timeStep = 0.05; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -742,16 +785,18 @@ for iseed = seedIndex
                     cfg.latency = [itw itw+timeWin];
                     trlDataStmp = ft_selectdata(cfg,trlDataS);
                     
-                    % calculate fourier spectrum
+                    % calculate fourier spectrum using multi taper
                     cfg            = [];
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
-                    cfg.foilim     = [2 120];
-                    % cfg.foi          = logspace(log10(2),log10(128),32);
-%                     cfg.taper      =  'hanning';
-                    cfg.tapsmofrq  = 5;
+                    %                                         cfg.foilim     = [2 120];
+                    cfg.foi          = 2:1:120;
+                    %                     cfg.taper      =  'hanning';
+                    cfg.tapsmofrq  = 6;
                     cfg.keeptrials = 'yes';
                     cfg.pad='nextpow2';
+                    
+                    
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
                     
                     freqS    = ft_freqanalysis(cfg, trlDataStmp);
@@ -1164,7 +1209,7 @@ for iseed = seedIndex
                 
             end
             
-             %% section4: calculate multivariate granger causality (MVGC) %%
+            %% section4: calculate multivariate granger causality (MVGC) %%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             if strcmp(calculate,'mvgc')
@@ -1211,10 +1256,10 @@ for iseed = seedIndex
                 
                 trlData = ft_preprocessing(cfg,trlData);
                 % Downsample Data
-%                 cfg = [];
-%                 cfg.resamplefs = 250;
-%                 cfg.detrend         = 'no';
-%                 [trlData] = ft_resampledata(cfg, trlData);
+                %                 cfg = [];
+                %                 cfg.resamplefs = 250;
+                %                 cfg.detrend         = 'no';
+                %                 [trlData] = ft_resampledata(cfg, trlData);
                 
                 badChanInd = trlData.trial{1,1}(seedElec,1)==0;
                 seedElec(badChanInd) = [];
@@ -1260,7 +1305,7 @@ for iseed = seedIndex
                 time2cal  = trlDataM.time{1}>=min(timeWin) & trlDataM.time{1}<=max(timeWin);
                 
                 %%%%---- to do pairwise ----%%%%
-                controlElec = []; 
+                controlElec = [];
                 %%%%---- to do pairwise ----%%%%
                 if isempty(controlElec)
                     % calculate connectivity metric with two regions
@@ -2161,23 +2206,23 @@ for iseed = seedIndex
                     frameDataS = double(squeeze(allMetricS(:,ifreq,itime)));
                     
                     
-                lmeTBL = table([frameDataM;frameDataS],[CondIndexM;CondIndexS],[subIndexM;subIndexS], ...
-                    [elecIndexM;elecIndexS], 'VariableNames',{'Y','Cond','Sub','Elec'});
-                lmeTBL.Cond = nominal(lmeTBL.Cond);
-                lmeTBL.Sub = nominal(lmeTBL.Sub);
-                lmeTBL.Elec = nominal(lmeTBL.Elec);
-                lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
-                
-%                                                 lmeTBL = table([frameDataM;frameDataS],[CondIndexM;CondIndexS],[subIndexM;subIndexS], ...
-%                                                     [elecIndexM(:,1);elecIndexS(:,1)], [elecIndexM(:,2);elecIndexS(:,2)], 'VariableNames',{'Y','Cond','Sub','Elec1','Elec2'});
-%                                                 lmeTBL.Cond = nominal(lmeTBL.Cond);
-%                                                 lmeTBL.Sub = nominal(lmeTBL.Sub);
-%                                                 lmeTBL.Elec1 = nominal(lmeTBL.Elec1);
-%                                                 lmeTBL.Elec2 = nominal(lmeTBL.Elec2);
-%                                                 lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec1:Elec2)','fitmethod','reml','DummyVarCoding','effects');
-%                                   
-                                                [~,~,lmeStats] = fixedEffects(lmeStruct);
-                
+                    lmeTBL = table([frameDataM;frameDataS],[CondIndexM;CondIndexS],[subIndexM;subIndexS], ...
+                        [elecIndexM;elecIndexS], 'VariableNames',{'Y','Cond','Sub','Elec'});
+                    lmeTBL.Cond = nominal(lmeTBL.Cond);
+                    lmeTBL.Sub = nominal(lmeTBL.Sub);
+                    lmeTBL.Elec = nominal(lmeTBL.Elec);
+                    lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
+                    
+                    %                                                 lmeTBL = table([frameDataM;frameDataS],[CondIndexM;CondIndexS],[subIndexM;subIndexS], ...
+                    %                                                     [elecIndexM(:,1);elecIndexS(:,1)], [elecIndexM(:,2);elecIndexS(:,2)], 'VariableNames',{'Y','Cond','Sub','Elec1','Elec2'});
+                    %                                                 lmeTBL.Cond = nominal(lmeTBL.Cond);
+                    %                                                 lmeTBL.Sub = nominal(lmeTBL.Sub);
+                    %                                                 lmeTBL.Elec1 = nominal(lmeTBL.Elec1);
+                    %                                                 lmeTBL.Elec2 = nominal(lmeTBL.Elec2);
+                    %                                                 lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec1:Elec2)','fitmethod','reml','DummyVarCoding','effects');
+                    %
+                    [~,~,lmeStats] = fixedEffects(lmeStruct);
+                    
                     tMap(ifreq,itime) = lmeStats.tStat(2);
                     pMap(ifreq,itime) = lmeStats.pValue(2);
                     [randBeta,~,~] = randomEffects(lmeStruct);

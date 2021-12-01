@@ -1,6 +1,8 @@
 %% plot time-frequency data after reducing dimension
 
-foi  = Para.freq>60 & Para.freq<85;
+
+% foi  = Para.freq>60.5 & Para.freq<91.5;
+foi  = Para.freq>23.5 & Para.freq<29.5;
 MetricM = squeeze(mean(allMetricM(:,foi,:),2));
 MetricS = squeeze(mean(allMetricS(:,foi,:),2));
 x2plot = Para.timePT;
@@ -62,8 +64,14 @@ end
 % plot new result
 
 % FDR  correction
-[p_fdr, p_masked] = fdr(pMap, 0.05,'Parametric');
+if numel(x2plot) == numel(Para.timePT)
+corrTimeInd = Para.timePT>-0.55 & Para.timePT< 1.05;
+[p_fdr, p_masked] = fdr(pMap(corrTimeInd), 0.05,'Parametric');
+highlight = pMap<=p_fdr;
+else
+    [p_fdr, p_masked] = fdr(pMap, 0.05,'Parametric');
 highlight = p_masked;
+end
 
 highlight =double(highlight);
 highlight(highlight==0) = nan;

@@ -166,7 +166,7 @@ end
 
 %% plot time frequency Coherence
 
-if contains(pathname,'COHtf')
+if contains(pathname,'COHtf') | contains(pathname,'COHtrl')
 
 tMap(tMap==0)=nan;
 pMap(pMap==0)=nan;
@@ -177,6 +177,7 @@ iind = 1:1:numel(Para.freq);
 pMap = pMap(iind,:);
 tMap = tMap(iind,:);
 y2plot = y2plot(:,iind,:);
+
 
 cdat = tMap;
 vdat = Para.freq(iind);

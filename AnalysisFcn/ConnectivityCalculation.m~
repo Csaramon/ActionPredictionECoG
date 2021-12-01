@@ -1,8 +1,8 @@
-function varargout = Copy_of_ConnectivityCalculation(calculate)
+function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PSItf'
+    calculate = 'COHtf'
 end
 
 % initialize base path and toolbox
@@ -546,8 +546,8 @@ for iseed = seedIndex
             %%%%%%%%%%%%%%%%%%%%%%%%
             if strcmp(calculate,'COHtrl')
                 
-                p=0.05; % threshold for IVC
-                freqRange = [24 29];
+               p=0.05; % threshold for IVC
+               freqRange = [24 29];
                 timeWin = 1; % unit in second
                 timeStep = 0.05; % unit in second
                 
@@ -624,38 +624,37 @@ for iseed = seedIndex
                 in = 1;
                 allcohM = [];
                 allcohS = [];
-                
-                
-                
-                % wavelet time frequency analysis
+
+                    
+
+     % wavelet time frequency analysis
                 cfg              = [];
-                cfg.output       = 'fourier';
+                cfg.output       = 'pow';
                 cfg.method       = 'wavelet';
-                cfg.foi          = min(freqRange):max(freqRange);
+                cfg.foi          = logspace(log10(freqRange(1)),log10(freqRange(2)),128);
                 cfg.width      = 7;
-                cfg.toi          = min(trlDataM.time{1}):timeStep:max(trlDataM.time{1}); %'all';
+                cfg.toi          = min(trlData.time{1}):timeStep:max(trlData.time{1}); %'all';
                 cfg.pad = 'nextpow2';
-                cfg.keeptrials = 'yes';
                 ft_warning off
-                
-                
-                freqM    = ft_freqanalysis(cfg, trlDataM);
-                
-                freqS    = ft_freqanalysis(cfg, trlDataS);
-                
-                % calculate COH in Matched Condition
-                cfg            = [];
-                cfg.method     = 'coh';
-                cfg.complex = 'absimag';
-                cfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
-                COHM             = ft_connectivityanalysis(cfg, freqM);
-                allcohM = COHM.cohspctrm;
-                % calculate COH in Scambled Condition
-                cfg.channelcmb = {trlDataS.label(seedElec) trlDataS.label(searchElec)};
-                COHS             = ft_connectivityanalysis(cfg, freqS);
-                allcohS = COHS.cohspctrm;
-                
-                
+                    
+                    
+                    freqM    = ft_freqanalysis(cfg, trlDataMtmp);
+                    
+                    freqS    = ft_freqanalysis(cfg, trlDataStmp);
+                    
+                    % calculate COH in Matched Condition
+                    cfg            = [];
+                    cfg.method     = 'coh';
+                    cfg.complex = 'absimag';
+                    cfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
+                    COHM             = ft_connectivityanalysis(cfg, freqM);
+                    allcohM(:,:,in) = COHM.cohspctrm;
+                    % calculate COH in Scambled Condition
+                    cfg.channelcmb = {trlDataS.label(seedElec) trlDataS.label(searchElec)};
+                    COHS             = ft_connectivityanalysis(cfg, freqS);
+                    allcohS(:,:,in) = COHS.cohspctrm;
+                    
+
                 
                 allChanCmb = [allChanCmb;COHM.labelcmb];
                 
@@ -685,7 +684,7 @@ for iseed = seedIndex
                 Para.chanCMB{isub} = allChanCmb;
                 Para.timeWin = timeWin;
                 Para.timeStep = timeStep;
-                Para.time = freqM.time;
+                Para.timePT = timePt;
                 Para.freq = freqM.freq;
                 nelec = nelec+Npair-1;
                 
@@ -786,15 +785,15 @@ for iseed = seedIndex
                     trlDataStmp = ft_selectdata(cfg,trlDataS);
                     
                     % calculate fourier spectrum using multi taper
-                    cfg            = [];
-                    cfg.output     = 'fourier';
-                    cfg.method     = 'mtmfft';
-                    %                                         cfg.foilim     = [2 120];
-                    cfg.foi          = 2:1:120;
+                                        cfg            = [];
+                                        cfg.output     = 'fourier';
+                                        cfg.method     = 'mtmfft';
+%                                         cfg.foilim     = [2 120];
+                                        cfg.foi          = 2:1:120;
                     %                     cfg.taper      =  'hanning';
-                    cfg.tapsmofrq  = 6;
-                    cfg.keeptrials = 'yes';
-                    cfg.pad='nextpow2';
+                                        cfg.tapsmofrq  = 4;
+                                        cfg.keeptrials = 'yes';
+                                        cfg.pad='nextpow2';
                     
                     
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
@@ -1060,7 +1059,7 @@ for iseed = seedIndex
                 
                 p=0.05; % threshold for IVC
                 timeWin = 1; % unit in second
-                timeStep = 0.05; % unit in second
+                timeStep = 0.1; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -1152,7 +1151,7 @@ for iseed = seedIndex
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [1 130];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 4;
+                    cfg.tapsmofrq  = 5;
                     cfg.keeptrials = 'yes';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
                     
@@ -1161,7 +1160,7 @@ for iseed = seedIndex
                     % calculate PSI in Matched Condition
                     cfg            = [];
                     cfg.method     = 'psi';
-                    cfg.bandwidth = 4;
+                    cfg.bandwidth = 10;
                     cfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
                     PSIM             = ft_connectivityanalysis(cfg, freqM);
                     allPSIM(:,:,in) = PSIM.psispctrm;

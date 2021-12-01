@@ -1,12 +1,14 @@
 %% plot time-frequency data after reducing dimension
 
-foi  = Para.freq>70 & Para.freq<90;
-toi = Para.timePT > 0.35 & Para.timePT > 0.35
+foi  = Para.freq>23.5 & Para.freq<29.5;
 MetricM = squeeze(mean(allMetricM(:,foi,:),2));
 MetricS = squeeze(mean(allMetricS(:,foi,:),2));
+x2plot = Para.timePT;
 
-MetricM = squeeze(mean(allMetricM(:,foi,:),2));
-MetricS = squeeze(mean(allMetricS(:,foi,:),2));
+% toi = Para.timePT > 0.45 & Para.timePT < 0.55;
+% MetricM = squeeze(nanmean(allMetricM(:,:,toi),3));
+% MetricS = squeeze(nanmean(allMetricS(:,:,toi),3));
+% x2plot = Para.freq;
 
 tMap = [];
 pMap = [];
@@ -31,9 +33,13 @@ for itime = 1:size(MetricM,2)
         continue
     end
     
-    
     lmeTBL.Y = [frameDataM;frameDataS];
+    
+    
     lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
+    
+%     lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec1)+(1|Elec2)+(1|Elec1:Elec2)','fitmethod','reml','DummyVarCoding','effects');
+    
     [~,~,lmeStats] = fixedEffects(lmeStruct);
     tMap(1,itime) = lmeStats.tStat(2);
     pMap(1,itime) = lmeStats.pValue(2);
@@ -65,11 +71,12 @@ highlight(highlight==0) = nan;
 hf = figure;
 
 hold on
-hM = shadedErrorBar(Para.timePT, yraw(1,:),seraw(1,:),{'color',[255 106 106]/255},1);
-hS = shadedErrorBar(Para.timePT, yraw(2,:), seraw(2,:),{'color',[30 144 255]/255},1);
-hsig = plot(Para.timePT,(max(yraw(:))+0.2*range(yraw(:)))*highlight,'k*');
+hM = shadedErrorBar(x2plot, y2plot(1,:),se2plot(1,:),{'color',[255 106 106]/255},1);
+hS = shadedErrorBar(x2plot, y2plot(2,:), se2plot(2,:),{'color',[30 144 255]/255},1);
+
+hsig = plot(x2plot,(max(yraw(:))+0.2*range(yraw(:)))*highlight,'k*');
 title(filename(1:end-4))
-xlim([-0.8 1.2])
+% xlim([-0.8 1.2])
 ylim([-2*max(abs(yraw(:))),2*max(abs(yraw(:)))])
 plot([0,0],get(gca,'ylim'),'k--')
 legend([hM.mainLine,hS.mainLine,hsig], ...

@@ -665,16 +665,25 @@ for iatlas = [1,3,7,8,9]%1:numel(ROIIndex) %[1,3,7,8,9]
 %             cfg.pad='nextpow2';
             
                     % time-frequency decomposition (multi-taper) 
-                    cfg              = [];
-                    cfg.output       = 'pow';
-                    cfg.method       = 'mtmconvol';
-                    cfg.foi          = 2:1:120;
-                    cfg.t_ftimwin  = 5./cfg.foi;
-                    cfg.tapsmofrq  = 0.4 *cfg.foi; % tapers=2*tw*fw-1
-                    cfg.toi          = min(rerefData.time{1}):0.1:max(rerefData.time{1});
-                    cfg.precision = 'single';
-                    cfg.pad='nextpow2';
-            
+%                     cfg              = [];
+%                     cfg.output       = 'pow';
+%                     cfg.method       = 'mtmconvol';
+%                     cfg.foi          = 2:1:120;
+%                     cfg.t_ftimwin  = 5./cfg.foi;
+%                     cfg.tapsmofrq  = 0.4 *cfg.foi; % tapers=2*tw*fw-1
+%                     cfg.toi          = min(rerefData.time{1}):0.1:max(rerefData.time{1});
+%                     cfg.precision = 'single';
+%                     cfg.pad='nextpow2';
+
+           % time-frequency decomposition (wavelet time domain convolution)
+            cfg              = [];
+            cfg.output       = 'pow';
+            cfg.method       = 'tfr';
+            cfg.foi          = 2:1:120;
+            cfg.width        =  7;
+            cfg.precision = 'single';
+            cfg.pad='nextpow2';
+
             ft_warning off
             freq = ft_freqanalysis(cfg,rerefData);
             
