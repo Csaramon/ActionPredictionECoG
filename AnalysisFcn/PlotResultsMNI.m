@@ -337,7 +337,8 @@ end
 % load data containing eletrode coordinates
 load([pathname filename])
 
-subColor = distinguishable_colors(numel(allsub));
+subColor = distinguishable_colors(2*numel(allsub));
+subColor = subColor([1 2 3 5 7 9 11 15 16 18],:);
 % load in electrodes coordinates
 lengendName = {};
 nsub = 1;
@@ -366,36 +367,42 @@ end
 
 
 
-% 225 238 210 precentral
-% 193 255 193 Pft
-% 209 208 167 Visual
-% 46 139 87 BA44
-% 255 185 15 IPL
-
-
 %% plot all electrodes on MNI brain
+
+PlotMNIBrain
+
 
 allsub = {'Patient1','Patient2','Patient3','Patient4','Patient6', ...
     'Patient8','Patient9','Patient11','Patient12','Patient13'}; % all sub
-PlotMNIBrain
 
-nelec = 0;
+
+subColor = distinguishable_colors(2*numel(allsub));
+subColor = subColor([1 2 3 5 7 9 11 15 16 18],:);
 % load in electrodes coordinates
+lengendName = {};
+nsub = 1;
+nelec = 0;
+he = [];
 for isub = 1:numel(allsub)
-    subColor = rand(1,3);
+
     elecposMNI = importdata([dataPath allsub{isub} '/FsRecon/brain3D/MNI152_coordinates_ras.txt']);
     elecposMNI = elecposMNI(:,1:3);
+    % choose electrode in ROI
     elecposMNI(elecposMNI(:,1)>0,1) = elecposMNI(elecposMNI(:,1)>0,1).*-1;
-    for ie = 1:size(elecposMNI,1)
+    if ~isempty(elecposMNI)
+        for ie = 1:size(elecposMNI,1)
+            
+            he(nsub) = scatter3(stereoaxes,elecposMNI(ie,1),elecposMNI(ie,2),elecposMNI(ie,3),60,subColor(isub,:),'fill');
+        end
         
-        he(isub) = scatter3(stereoaxes,elecposMNI(ie,1),elecposMNI(ie,2),elecposMNI(ie,3),60,subColor,'fill');
+        lengendName(nsub) = allsub(isub);
+        nsub = nsub +1;
+        nelec = nelec + size(elecposMNI,1);
     end
-
-nelec = nelec+size(elecposMNI,1);
-
 end
 
- legend(he,allsub,'Location','northeast')
+ legend(he,lengendName,'Location','northeast')
+
    
 %% plot specifc regions
 
@@ -418,35 +425,35 @@ aparc_stereo1 = patch(struct(...
     'vertices', vertices, 'faces', faces), ...
     'Parent',stereoaxes, ...
     'FaceColor',[209,73,78]./255, ...
-    'FaceAlpha',0.3, ...
+    'FaceAlpha',0, ...
     'EdgeColor', 'none', ...
     'Tag', num2str(aprac_indx));
 material dull
 
 % % --------------------------------
  % BA44
-aprac_indx = [1 255];
-bashcode = ['. ~/.zshrc;' ...
-    'mri_binarize --i ' [MNI152path '/mri/fsLeft_Broca_44.nii'] ...
-    ' --min ' num2str(min(aprac_indx)-0.01) ' --max ' num2str(max(aprac_indx)+0.01) ' --o ' [MNI152path '/mri/surf_aprac.nii']];
+% aprac_indx = [1 255];
 % bashcode = ['. ~/.zshrc;' ...
-%     'fslmaths ' [MNI152path '/mri/fsAnatomyMacro.nii'] ...
-%     ' -thr ' num2str(min(aprac_indx)) ' -uthr ' num2str(max(aprac_indx)) ' ' [MNI152path '/mri/surf_aprac.nii']];
-unix(bashcode);
-
-make_outer_surface_wlab ([MNI152path '/mri/surf_aprac.nii'], 15, [MNI152path '/mri/surf_aprac.surf']);
-
-fprintf('Adding surface\n')
-[vertices, faces]=read_surf([MNI152path '/mri/surf_aprac.surf']);
-faces = faces+1;
-aparc_stereo2 = patch(struct(...
-    'vertices', vertices, 'faces', faces), ...
-    'Parent',stereoaxes, ...
-    'FaceColor',[255 218 185]./255, ...
-    'FaceAlpha',0.3, ...
-    'EdgeColor', 'none', ...
-    'Tag', num2str(aprac_indx));
-material dull
+%     'mri_binarize --i ' [MNI152path '/mri/fsLeft_Broca_44.nii'] ...
+%     ' --min ' num2str(min(aprac_indx)-0.01) ' --max ' num2str(max(aprac_indx)+0.01) ' --o ' [MNI152path '/mri/surf_aprac.nii']];
+% % bashcode = ['. ~/.zshrc;' ...
+% %     'fslmaths ' [MNI152path '/mri/fsAnatomyMacro.nii'] ...
+% %     ' -thr ' num2str(min(aprac_indx)) ' -uthr ' num2str(max(aprac_indx)) ' ' [MNI152path '/mri/surf_aprac.nii']];
+% unix(bashcode);
+% 
+% make_outer_surface_wlab ([MNI152path '/mri/surf_aprac.nii'], 15, [MNI152path '/mri/surf_aprac.surf']);
+% 
+% fprintf('Adding surface\n')
+% [vertices, faces]=read_surf([MNI152path '/mri/surf_aprac.surf']);
+% faces = faces+1;
+% aparc_stereo2 = patch(struct(...
+%     'vertices', vertices, 'faces', faces), ...
+%     'Parent',stereoaxes, ...
+%     'FaceColor',[255 218 185]./255, ...
+%     'FaceAlpha',0.3, ...
+%     'EdgeColor', 'none', ...
+%     'Tag', num2str(aprac_indx));
+% material dull
 
 % % --------------------------------
 % supramarginal
@@ -468,7 +475,7 @@ aparc_stereo3 = patch(struct(...
     'vertices', vertices, 'faces', faces), ...
     'Parent',stereoaxes, ...
     'FaceColor',[238 130 238]./255, ...
-    'FaceAlpha',0.3, ...
+    'FaceAlpha',0, ...
     'EdgeColor', 'none', ...
     'Tag', num2str(aprac_indx));
 material dull
@@ -493,13 +500,16 @@ aparc_stereo4 = patch(struct(...
     'vertices', vertices, 'faces', faces), ...
     'Parent',stereoaxes, ...
     'FaceColor',[18 53 85]./255, ...
-    'FaceAlpha',0.3, ...
+    'FaceAlpha',0, ...
     'EdgeColor', 'none', ...
     'Tag', num2str(aprac_indx));
 material dull
 
 
 
-legend([aparc_stereo1,aparc_stereo2,aparc_stereo3,aparc_stereo4],['Precentral (8sub,59 elec)'],...
-['BA44 (9 sub,19 elec)'], ['SupraMarginal (9sub,56 elec)'],['MiddleOccipital (6 sub,40 elec)'],'Location','northeast')
+% legend([aparc_stereo1,aparc_stereo3,aparc_stereo4],['Precentral (8sub,59 elec)'],...
+% ['SupraMarginal (9sub,56 elec)'],['MiddleOccipital (6 sub,40 elec)'],'Location','northeast')
 
+% abbreviation version
+legend([aparc_stereo1,aparc_stereo3,aparc_stereo4],['PreCG (8sub,59 elec)'],...
+['SMG (9sub,56 elec)'],['MOG (6 sub,40 elec)'],'Location','northeast')

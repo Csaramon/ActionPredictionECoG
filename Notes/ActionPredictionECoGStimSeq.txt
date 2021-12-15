@@ -1,0 +1,27 @@
+-- Session A --
+S03 Preparing bread with butter and jam
+m04 Sewing a button
+S12 Sending a letter
+M11 Cleaning a laptop screen
+M22 Folding a shirt
+S17 Replacing a pillow cover
+S05 Writing a gift card
+M08 Framing a picture
+-- Session B --
+M12
+S08
+S01 Inflating and tying a balloon
+M13 Replacing battery in a torch
+M05
+S22 
+M10 Cleaning spectacles
+S07 Arranging flowers in a vase
+-- Session C --
+M07
+S11
+M01
+S04
+S10
+M17
+S13
+M03
