@@ -2,7 +2,7 @@
 
 
 % foi  = Para.freq>60.5 & Para.freq<91.5;
-foi  = Para.freq>23.5 & Para.freq<29.5;
+foi  = Para.freq>20 & Para.freq<31;
 MetricM = squeeze(mean(allMetricM(:,foi,:),2));
 MetricS = squeeze(mean(allMetricS(:,foi,:),2));
 x2plot = Para.timePT;
@@ -11,6 +11,7 @@ x2plot = Para.timePT;
 % MetricM = squeeze(nanmean(allMetricM(:,:,toi),3));
 % MetricS = squeeze(nanmean(allMetricS(:,:,toi),3));
 % x2plot = Para.freq;
+
 
 tMap = [];
 pMap = [];
@@ -63,6 +64,9 @@ end
 
 % plot new result
 
+y2plot = yraw;
+se2plot = seraw;
+
 % FDR  correction
 if numel(x2plot) == numel(Para.timePT)
 corrTimeInd = Para.timePT>-0.55 & Para.timePT< 1.05;
@@ -79,13 +83,13 @@ highlight(highlight==0) = nan;
 hf = figure;
 
 hold on
-hM = shadedErrorBar(x2plot, yraw(1,:),seraw(1,:),{'color',[255 106 106]/255},1);
-hS = shadedErrorBar(x2plot, yraw(2,:), seraw(2,:),{'color',[30 144 255]/255},1);
+hM = shadedErrorBar(x2plot, y2plot(1,:),se2plot(1,:),{'color',[255 106 106]/255},1);
+hS = shadedErrorBar(x2plot, y2plot(2,:), se2plot(2,:),{'color',[30 144 255]/255},1);
 
-hsig = plot(x2plot,(max(yraw(:))+0.2*range(yraw(:)))*highlight,'k*');
+hsig = plot(x2plot,(max(y2plot(:))+0.2*range(y2plot(:)))*highlight,'k-');
 title(filename(1:end-4))
-% xlim([-0.8 1.2])
-ylim([-2*max(abs(yraw(:))),2*max(abs(yraw(:)))])
+% xlim([-0.5 1])
+% ylim([-2*max(abs(y2plot(:))),2*max(abs(y2plot(:)))])
 plot([0,0],get(gca,'ylim'),'k--')
 legend([hM.mainLine,hS.mainLine,hsig], ...
     ['Intact'],['Scrambled'],['P<0.05 (corrected)']);

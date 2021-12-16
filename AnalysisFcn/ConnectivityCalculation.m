@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'COHtf'
+    calculate = 'GrangerTF'
 end
 
 % initialize base path and toolbox
@@ -1060,7 +1060,7 @@ for iseed = seedIndex
                 
                 p=0.05; % threshold for IVC
                 timeWin = 1; % unit in second
-                timeStep = 0.1; % unit in second
+                timeStep = 0.05; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -1409,7 +1409,7 @@ for iseed = seedIndex
                 
                 p=0.05; % threshold for IVC
                 timeWin = 1; % unit in second
-                timeStep = 0.1; % unit in second
+                timeStep = 0.05; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -1500,7 +1500,7 @@ for iseed = seedIndex
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
                     cfg.foilim     = [2 120]; % need equidistant frequency bins for granger method
-                    cfg.tapsmofrq  = 4;
+                    cfg.tapsmofrq  = 6;
                     cfg.keeptrials = 'yes';
                     cfg.pad='nextpow2';
                     ft_warning off
