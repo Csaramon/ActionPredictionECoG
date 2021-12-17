@@ -678,7 +678,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             freq2 = ft_freqanalysis(cfg,rerefData);
             
                         cfg.foi          = 2:1:30;
-            cfg.t_ftimwin  = 4./cfg.foi;
+            cfg.t_ftimwin  = 14./cfg.foi;
             cfg.tapsmofrq  = 0.3 *cfg.foi; % tapers=2*tw*fw-1
             freq = ft_freqanalysis(cfg,rerefData);
             

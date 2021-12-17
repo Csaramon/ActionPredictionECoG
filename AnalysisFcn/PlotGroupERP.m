@@ -68,8 +68,8 @@ pMap(tMap==0)=nan;
 y2plot = y2plot.*Para.freq;
 se2plot = se2plot.*Para.freq;
 % com2930 = y2plot(:,29)-y2plot(:,30);
-% y2plot(1,30:end) = y2plot(1,30:end)+com2930(1);
-% y2plot(2,30:end) = y2plot(2,30:end)+com2930(2);
+% y2plot(1,30:end) = y2plot(1,30:end)+mean(com2930);
+% y2plot(2,30:end) = y2plot(2,30:end)+mean(com2930);
 
 % uncorrected
 highlight = double(pMap< 0.05);
@@ -124,10 +124,10 @@ gammaPowS = mean(allMetricS(:,gammaInd),2);
 
 haBeta = axes(hf,'Position',[0.4 0.4 0.2 0.3],...
     'Xlim',[0.5 2.5],'XTick', [1,2],'XTickLabel',{'I','S'},'YTick',[],'NextPlot','add');
-ylabel(haBeta,'Beta Power (a.u.)')
+ylabel(haBeta,'Beta Power')
 haGamma = axes(hf,'Position',[0.65 0.4 0.2 0.3],...
     'Xlim',[0.5 2.5],'XTick', [1,2],'XTickLabel',{'I','S'},'YTick',[],'NextPlot','add');
-ylabel(haGamma,'Gamma Power (a.u.)')
+ylabel(haGamma,'Gamma Power')
 
 
 % compare the mean value of each frequecy band
@@ -172,10 +172,10 @@ ysubgammaS = [ysubgammaS,ygammaS];
 end
 
 % plot mean value
-plot(haBeta,[1,2],[mean(ysubbetaM),mean(ysubbetaS)],'-','Color',[0.8 0.8 0.8])
+plot(haBeta,[1,2],[mean(ysubbetaM),mean(ysubbetaS)],'-','Color',[0.75 0.75 0.75 0.75])
 % a = get(haBeta,'Children');
 % set(haBeta,'Children',[a(2:end);a(1)])
-plot(haGamma,[1,2],[mean(ysubgammaM),mean(ysubgammaS)],'-','Color',[0.8 0.8 0.8])
+plot(haGamma,[1,2],[mean(ysubgammaM),mean(ysubgammaS)],'-','Color',[0.75 0.75 0.75 0.75])
 % a = get(haGamma,'Children');
 % set(haGamma,'Children',[a(2:end);a(1)])
 
