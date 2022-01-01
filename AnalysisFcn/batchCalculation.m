@@ -2,7 +2,7 @@ function varargout = batchCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'PSDmovie'
+    calculate = 'PAC'
 end
 
 % initialize base path and toolbox
@@ -1158,10 +1158,10 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         
         %% section6: calculate PAC %%
         %%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'PAC')
+        if strcmp(calculate,'PACold')
             
             % calculation parameters
-            timeRange = [0 0.5];
+            timeRange = [0 1];
             
             %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1182,6 +1182,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             %             cfg.detrend = 'yes';
             %
             %             trlData = ft_preprocessing(cfg,trlData);
+            
             % seperate conditions
             cfg = [];
             cfg.trials = find(trlData.trialinfo(:,1)==0);
@@ -1228,6 +1229,94 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
                 saveas(gcf,[resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ROIText{iatlas} filesep ...
                     subname num2str(ie) 'S.fig']);
                 close(gcf)
+                allPACS(Npair,:,:) = pacmat;
+                
+                % count for pairs of eletrodes
+                Npair = Npair + 1;
+                
+            end
+            
+            
+            % generate index for Subject Electrode and Trial
+            metricM = allPACM;
+            metricS = allPACS;
+            
+            elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-2]');
+            subIndexM = cat(1,subIndexM,repmat(isub,Npair-1,1));
+            
+            
+            elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-2]');
+            subIndexS = cat(1,subIndexS,repmat(isub,Npair-1,1));
+            
+            % concontenate all trial responses in chosen ROI
+            allMetricM = cat(1,allMetricM,metricM);
+            allMetricS = cat(1,allMetricS,metricS);
+            
+            Para.chanCMB{isub} = ROIelec;
+            Para.freqvec_ph = freqvec_ph;
+            Para.freqvec_amp = freqvec_amp;
+            nelec = nelec+Npair-1;
+            
+        end
+        
+        
+         %% section6: calculate PAC %%
+        %%%%%%%%%%%%%%%%%%%%%%%%
+        if strcmp(calculate,'PAC')
+            
+            % calculation parameters
+            timeRange = [0 1];
+            
+            %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            if exist([dataPath subname 'LAR_trlData.mat'],'file')
+                a = load([dataPath subname 'LAR_trlData']);
+            end
+            c = fieldnames(a);
+            trlData = a.(c{1});
+            
+            % choose ROI electrodes according to MNI coordinates
+            elecposMNI = trlData.elec.elecposMNI;
+            tempdev = pdist2(elecposMNI,aparc_coordiantes);
+            [it,~] = find(tempdev <=roiDist);
+            ROIelec = unique(it);
+            
+            %             cfg = [];
+            %             cfg.demean = 'yes';
+            %             cfg.detrend = 'yes';
+            %
+            %             trlData = ft_preprocessing(cfg,trlData);
+            
+            % seperate conditions
+            cfg = [];
+            cfg.trials = find(trlData.trialinfo(:,1)==0);
+            trlDataM = ft_selectdata(cfg,trlData);
+            
+            cfg = [];
+            cfg.trials = find(trlData.trialinfo(:,1)==1);
+            trlDataS = ft_selectdata(cfg,trlData);
+            
+            
+            cfg = [];
+            cfg.channel = 'all';
+            cfg.keeptrials = 'yes';
+            timelockM = ft_timelockanalysis(cfg,trlDataM);
+            timelockS = ft_timelockanalysis(cfg,trlDataS);
+
+            
+            % calculate single electrode PAC with shuffle
+            timeInd = timelockM.time>=timeRange(1) & timelockM.time<=timeRange(2);
+            allPACM = [];
+            allPACS = [];
+            Npair = 1;
+            for ie = ROIelec'
+                metricM = squeeze(timelockM.trial(:,ie,timeInd));
+                metricS = squeeze(timelockS.trial(:,ie,timeInd));
+                
+                [pacmat, freqvec_ph, freqvec_amp] = find_pac_shf(metricM', trlDataM.fsample, 'cfc');
+                allPACM(Npair,:,:) = pacmat;
+                
+                [pacmat, freqvec_ph, freqvec_amp] = find_pac_shf(metricS', trlDataS.fsample, 'cfc');
                 allPACS(Npair,:,:) = pacmat;
                 
                 % count for pairs of eletrodes
@@ -1601,10 +1690,10 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         
         tMap = zeros(size(metricM,2),size(metricM,3));
         pMap = zeros(size(metricM,2),size(metricM,3));
-        y2plot = zeros(2,size(metricM,32),size(metricM,3));
-        se2plot = zeros(2,size(metricM,32),size(metricM,3));
-        yraw = zeros(2,size(metricM,32),size(metricM,3));
-        seraw = zeros(2,size(metricM,32),size(metricM,3));
+        y2plot = zeros(2,size(metricM,2),size(metricM,3));
+        se2plot = zeros(2,size(metricM,2),size(metricM,3));
+        yraw = zeros(2,size(metricM,2),size(metricM,3));
+        seraw = zeros(2,size(metricM,2),size(metricM,3));
         
         strlen = 0;
         % point wise LME
