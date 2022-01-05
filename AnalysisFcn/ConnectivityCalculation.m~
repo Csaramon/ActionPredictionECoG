@@ -54,9 +54,9 @@ for iseed = seedIndex
     for isearch = searchIndex
         
         %                 skip redundant pairs
-        %         if ~ismember([iseed,isearch],allPair,'rows')
-        %             continue
-        %         end
+%         if ~ismember([iseed,isearch],allPair,'rows')
+%             continue
+%         end
         
         if iseed==isearch
             continue
@@ -852,8 +852,8 @@ for iseed = seedIndex
                 
                 
             end
-            
-            %% section2-3: calculate Coherence correlation with coordiantes %%
+ 
+                        %% section2-3: calculate Coherence correlation with coordiantes %%
             %%%%%%%%%%%%%%%%%%%%%a%%%
             if strcmp(calculate,'COHcorr')
                 
@@ -980,7 +980,7 @@ for iseed = seedIndex
                 
                 allChanCmb = [allChanCmb;seedElec];
                 allCoordinates = [allCoordinates;elecposMNI(seedElec,:)];
-                
+   
                 allMetricM = cat(1,allMetricM,allcohM);
                 allMetricS = cat(1,allMetricS,allcohS);
                 
@@ -990,15 +990,12 @@ for iseed = seedIndex
                 Para.timeStep = timeStep;
                 Para.timePT = timePt;
                 Para.freq = freqM.freq;
+                nelec = nelec+Npair-1;
                 
-                if ~exist([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)],'file')
-                    mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)])
-                end
-                save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) filesep ...
-                    ROIText{iseed} '_'  ROIText{isearch}],'allMetricM','allMetricS','allCoordinates','Para');
+                
                 
             end
-            
+     
             
             %% section3: calculate Phase Slope Index (PSI)%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%

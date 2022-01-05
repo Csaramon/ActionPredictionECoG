@@ -387,24 +387,14 @@ ylabel('Coherence')
 
 legend(hp2,['r = ' num2str(R(1,2)) ', p= ' num2str(P(1,2))])
 
-rs = [];
-ps = [];
+
 for itime = 1:size(allMetricM,3)
     metricM = mean(allMetricM(:,foi,itime),2);
-    metricS = mean(allMetricS(:,foi,itime),2);
-    y = metricM;
-    x = allCoordinates(:,3);
-    [R,P] = corrcoef(x,y);
-    rs(itime) = R(1,2);
-    ps(itime) = P(1,2);
+metricS = mean(allMetricS(:,foi,itime),2);
+y = metricM;
+x = allCoordinates(:,3);
+
 end
-highlight =ones(size(ps));
-highlight(ps>=0.05) = nan;
-
-hf2 = figure;
-plot(Para.timePT,rs);hold on;
-hsig = plot(Para.timePT,max(rs)+0.3*range(rs)*highlight,'k*');
-
 % save the figure to data location
 saveas(hf1,[pathname filename(1:end-4)])
 %% plot multivariate granger causality
