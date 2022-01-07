@@ -2,7 +2,7 @@ function varargout = batchCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'PAC'
+    calculate = 'BP'
 end
 
 % initialize base path and toolbox
@@ -678,7 +678,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             freq2 = ft_freqanalysis(cfg,rerefData);
             
                         cfg.foi          = 2:1:30;
-            cfg.t_ftimwin  = 14./cfg.foi;
+            cfg.t_ftimwin  = 4./cfg.foi;
             cfg.tapsmofrq  = 0.3 *cfg.foi; % tapers=2*tw*fw-1
             freq = ft_freqanalysis(cfg,rerefData);
             
@@ -893,8 +893,8 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         %%%%%%%%%%%%%%%%%%%%%%%%
         if strcmp(calculate,'BP')
             
-            timeRange = [-0.5 1];
-            freqRange = [60 90] ; % [20 30] [60 90]
+            timeRange = [-1.2 1.7];
+            freqRange = [20 30] ; % [20 30] [60 90]
             
             %%%%%%%%%%%%%%% load trl data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -951,9 +951,9 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             cfg.output       = 'pow';
             cfg.method       = 'mtmconvol';
             cfg.foi          = min(freqRange):max(freqRange);
-            cfg.t_ftimwin  = 10./cfg.foi;
+            cfg.t_ftimwin  = 5./cfg.foi;
             cfg.tapsmofrq  = 0.3 *cfg.foi; % tapers=2*tw*fw-1
-            cfg.toi          = min(timeRange):0.05:max(timeRange);
+            cfg.toi          = min(timeRange):0.01:max(timeRange);
             cfg.keeptrials = 'yes';
             %                                 cfg.precision = 'single';
             cfg.pad='nextpow2';

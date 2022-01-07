@@ -3,7 +3,7 @@
 clear;
 [filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/BP/*.mat']);
 
-if ~filterindex 
+if ~filterindex
     return
 end
 
@@ -17,7 +17,7 @@ pMap(pMap==0)=nan;
 % highlight = double(pMap< 0.05);
 
 % Bofforoni  correction
-% highlight = pMap< 0.05/numel(pMap); 
+% highlight = pMap< 0.05/numel(pMap);
 
 % FDR  correction
 [p_fdr, p_masked] = fdr(pMap, 0.05);
@@ -54,7 +54,7 @@ saveas(hf,[pathname filename(1:end-4)])
 clear;
 [filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/BP/*.mat']);
 
-if ~filterindex 
+if ~filterindex
     return
 end
 
@@ -75,7 +75,7 @@ se2plot = se2plot.*Para.freq;
 highlight = double(pMap< 0.05);
 
 % Bofforoni  correction
-% highlight = pMap< 0.05/numel(pMap); 
+% highlight = pMap< 0.05/numel(pMap);
 
 % FDR  correction
 [p_fdr, p_masked] = fdr(pMap, 0.05);
@@ -88,18 +88,18 @@ highlight(highlight==0) = nan;
 highlightcorr(highlightcorr==0) = nan;
 
 hf = figure;
-
+set(gca,'linewidth',1)
 hold on
 
 hM = shadedErrorBar(Para.freq, y2plot(1,:),se2plot(1,:),{'color',[255 106 106]/255},1);
 hS = shadedErrorBar(Para.freq, y2plot(2,:), se2plot(2,:),{'color',[30 144 255]/255},1);
 
-hsig = plot(Para.freq,(max(y2plot(:))+0.1*range(y2plot(:)))*highlight,'-','color',[0.5 0.5 0.5]);
-hsigcorr = plot(Para.freq,(max(y2plot(:))+0.05*range(y2plot(:)))*highlightcorr,'-','color',[0 0 0]);
+hsig = plot(Para.freq,(max(y2plot(:))+0.1*range(y2plot(:)))*highlight,'-','color',[0.5 0.5 0.5],'LineWidth',2);
+hsigcorr = plot(Para.freq,(max(y2plot(:))+0.05*range(y2plot(:)))*highlightcorr,'-','color',[0 0 0],'LineWidth',2);
 
 title(filename(1:end-4))
 xlabel('Frequency (Hz)')
-ylabel('Normalised Power (a.u)')
+ylabel('Power (a.u)')
 
 legend([hM.mainLine,hS.mainLine,hsig,hsigcorr], ...
     ['Intact'],['Scrambled'],['P<0.05'],['P<0.05 (corrected)'],'box','off');
@@ -154,28 +154,28 @@ ysubbetaS = [];
 ysubgammaM = [];
 ysubgammaS = [];
 for isub = unique(lmeTBL.Sub)'
-
-%     yM = mean(lmeTBL.Y(lmeTBL.Cond=='1' & lmeTBL.Sub==isub));
-%     yS = mean(lmeTBL.Y(lmeTBL.Cond=='2' & lmeTBL.Sub==isub));
+    
     ybetaM = mean(YcorrBeta(lmeTBL.Cond=='1' & lmeTBL.Sub==isub));
     ybetaS = mean(YcorrBeta(lmeTBL.Cond=='2' & lmeTBL.Sub==isub));
-    plot(haBeta,[1,2],[ybetaM,ybetaS],'-','Color',[subColor(double(isub),:) 0.2])
+    plot(haBeta,[1,2],[ybetaM,ybetaS],'-','Color',[subColor(double(isub),:) 0.3])
     
-        ygammaM = mean(YcorrGamma(lmeTBL.Cond=='1' & lmeTBL.Sub==isub));
+    ygammaM = mean(YcorrGamma(lmeTBL.Cond=='1' & lmeTBL.Sub==isub));
     ygammaS = mean(YcorrGamma(lmeTBL.Cond=='2' & lmeTBL.Sub==isub));
-    plot(haGamma,[1,2],[ygammaM,ygammaS],'-','Color',[subColor(double(isub),:) 0.2])
+    plot(haGamma,[1,2],[ygammaM,ygammaS],'-','Color',[subColor(double(isub),:) 0.3])
     
     ysubbetaM = [ysubbetaM,ybetaM];
-ysubbetaS = [ysubbetaS,ybetaS];
-ysubgammaM = [ysubgammaM,ygammaM];
-ysubgammaS = [ysubgammaS,ygammaS];
+    ysubbetaS = [ysubbetaS,ybetaS];
+    ysubgammaM = [ysubgammaM,ygammaM];
+    ysubgammaS = [ysubgammaS,ygammaS];
 end
 
 % plot mean value
-plot(haBeta,[1,2],[mean(ysubbetaM),mean(ysubbetaS)],'-','Color',[0.4 0.4 0.4 1])
+plot(haBeta,[1,2],[mean(ysubbetaM),mean(ysubbetaS)],'-','Color',[0.4 0.4 0.4 1],'LineWidth',2)
+set(haBeta,'LineWidth',1)
 % a = get(haBeta,'Children');
 % set(haBeta,'Children',[a(2:end);a(1)])
-plot(haGamma,[1,2],[mean(ysubgammaM),mean(ysubgammaS)],'-','Color',[0.4 0.4 0.4 1])
+plot(haGamma,[1,2],[mean(ysubgammaM),mean(ysubgammaS)],'-','Color',[0.4 0.4 0.4 1],'LineWidth',2)
+set(haGamma,'LineWidth',1)
 % a = get(haGamma,'Children');
 % set(haGamma,'Children',[a(2:end);a(1)])
 
@@ -195,7 +195,7 @@ saveas(hf,[pathname filename(1:end-4)])
 clear;
 [filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/BP/*.mat']);
 
-if ~filterindex 
+if ~filterindex
     return
 end
 
@@ -206,26 +206,32 @@ tMap(tMap==0)=nan;
 pMap(pMap==0)=nan;
 
 % uncorrected
-% highlight = double(pMap< 0.05);
+highlight = double(pMap< 0.05);
 
 % Bofforoni  correction
-% highlight = pMap< 0.05/numel(pMap); 
+% highlight = pMap< 0.05/numel(pMap);
 
 % FDR  correction
 [p_fdr, p_masked] = fdr(pMap, 0.05);
-highlight = p_masked;
+highlightcorr = p_masked;
+
+% the significant points could be marked with a red stars
+highlight =double(highlight);
+highlightcorr =double(highlightcorr);
+highlight(highlight==0) = nan;
+highlightcorr(highlightcorr==0) = nan;
 
 % remove significant clusters shorter than 100ms
-Ls = bwconncomp(highlight,4);
-lenths = [];
-    for ic = 1:numel(Ls.PixelIdxList)
-        yy = Ls.PixelIdxList{ic};
-        if Para.time(max(yy))-Para.time(min(yy)) < 0.1
-            highlight(Ls.PixelIdxList{ic}) = 0;
-        end 
-    end
-highlight =double(highlight);
-highlight(highlight==0) = nan;
+% Ls = bwconncomp(highlight,4);
+% lenths = [];
+% for ic = 1:numel(Ls.PixelIdxList)
+%     yy = Ls.PixelIdxList{ic};
+%     if Para.time(max(yy))-Para.time(min(yy)) < 0.1
+%         highlight(Ls.PixelIdxList{ic}) = 0;
+%     end
+% end
+% highlight =double(highlight);
+% highlight(highlight==0) = nan;
 
 % the significant points could be marked with a red stars
 
@@ -233,9 +239,11 @@ hf = figure;
 
 
 hold on
-hM = shadedErrorBar(Para.time, yraw(1,:),seraw(1,:),{'color',[255 106 106]/255},1);
-hS = shadedErrorBar(Para.time, yraw(2,:), seraw(2,:),{'color',[30 144 255]/255},1);
-hsig = plot(Para.time,(max(yraw(:))+0.3*range(yraw(:)))*highlight,'k-');
+hM = shadedErrorBar(Para.time, y2plot(1,:),se2plot(1,:),{'color',[255 106 106]/255},1);
+hS = shadedErrorBar(Para.time, y2plot(2,:), se2plot(2,:),{'color',[30 144 255]/255},1);
+hsig = plot(Para.time,(max(y2plot(:))+0.3*range(y2plot(:)))*highlight,'k-','color',[0.5 0.5 0.5]);
+hsigcorr = plot(Para.time,(max(y2plot(:))+0.1*range(y2plot(:)))*highlightcorr,'-','color',[0 0 0]);
+
 plot([0,0],get(gca,'ylim'),'k--')
 legend([hM.mainLine,hS.mainLine,hsig], ...
     ['Intact'],['Scrambled'],['P<0.05 (corrected)']);
@@ -253,7 +261,7 @@ saveas(hf,[pathname filename(1:end-4)])
 clear;
 [filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/PLV/*.mat']);
 
-if ~filterindex 
+if ~filterindex
     return
 end
 
@@ -267,7 +275,7 @@ pMap(pMap==0)=nan;
 % highlight = double(pMap< 0.05);
 
 % Bofforoni  correction
-% highlight = pMap< 0.05/numel(pMap); 
+% highlight = pMap< 0.05/numel(pMap);
 
 % FDR  correction
 [p_fdr, p_masked] = fdr(pMap, 0.05);
@@ -280,7 +288,7 @@ highlight = p_masked;
 %         yy = Ls.PixelIdxList{ic};
 %         if Para.time(max(yy))-Para.time(min(yy)) < 0.1
 %             highlight(Ls.PixelIdxList{ic}) = 0;
-%         end 
+%         end
 %     end
 highlight =double(highlight);
 highlight(highlight==0) = nan;
@@ -305,7 +313,7 @@ ylim([min(y2plot(:))-0.3*range(y2plot(:)),max(y2plot(:))+0.4*range(y2plot(:))]);
 clear;
 [filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/COH/*.mat']);
 
-if ~filterindex 
+if ~filterindex
     return
 end
 
@@ -319,7 +327,7 @@ pMap(pMap==0)=nan;
 % highlight = double(pMap< 0.05);
 
 % Bofforoni  correction
-% highlight = pMap< 0.05/numel(pMap); 
+% highlight = pMap< 0.05/numel(pMap);
 
 % FDR  correction
 [p_fdr, p_masked] = fdr(pMap, 0.05);
@@ -332,7 +340,7 @@ highlight = p_masked;
 %         yy = Ls.PixelIdxList{ic};
 %         if Para.time(max(yy))-Para.time(min(yy)) < 0.1
 %             highlight(Ls.PixelIdxList{ic}) = 0;
-%         end 
+%         end
 %     end
 highlight =double(highlight);
 highlight(highlight==0) = nan;
@@ -358,7 +366,7 @@ ylim([min(y2plot(:))-0.3*range(y2plot(:)),max(y2plot(:))+0.4*range(y2plot(:))]);
 clear;
 [filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/COH/*.mat']);
 
-if ~filterindex 
+if ~filterindex
     return
 end
 
@@ -408,11 +416,11 @@ hsig = plot(Para.timePT,max(rs)+0.3*range(rs)*highlight,'k*');
 % save the figure to data location
 saveas(hf1,[pathname filename(1:end-4)])
 %% plot multivariate granger causality
- 
+
 clear;
 [filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/Granger/*.mat']);
 
-if ~filterindex 
+if ~filterindex
     return
 end
 
@@ -428,7 +436,7 @@ load([pathname filename])
 % highlight = double(pMap< 0.05);
 
 % Bofforoni  correction
-% highlight = pMap< 0.05/numel(pMap); 
+% highlight = pMap< 0.05/numel(pMap);
 
 % FDR  correction
 [p_fdr, p_masked] = fdr(pMap, 0.05);
@@ -441,7 +449,7 @@ highlight = p_masked;
 %         yy = Ls.PixelIdxList{ic};
 %         if Para.time(max(yy))-Para.time(min(yy)) < 0.1
 %             highlight(Ls.PixelIdxList{ic}) = 0;
-%         end 
+%         end
 %     end
 highlight =double(highlight);
 highlight(highlight==0) = nan;
@@ -463,15 +471,15 @@ ylabel([filename(1:ti-1) ' to Granger Index from ' filename(1:ti-1)])
 
 xlim([1 120])
 ylim([-1.5*max(abs(y2plot(:))),1.5*max(abs(y2plot(:)))])
-      
+
 % save the figure to data location
 saveas(hf,[pathname filename(1:end-4)])
-      
+
 %% plot PSI
 clear;
 [filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/PSI/*.mat']);
 
-if ~filterindex 
+if ~filterindex
     return
 end
 
@@ -485,7 +493,7 @@ pMap(pMap==0)=nan;
 % highlight = double(pMap< 0.05);
 
 % Bofforoni  correction
-% highlight = pMap< 0.05/numel(pMap); 
+% highlight = pMap< 0.05/numel(pMap);
 
 % FDR  correction
 [p_fdr, p_masked] = fdr(pMap, 0.05);
@@ -498,7 +506,7 @@ highlight = p_masked;
 %         yy = Ls.PixelIdxList{ic};
 %         if Para.time(max(yy))-Para.time(min(yy)) < 0.1
 %             highlight(Ls.PixelIdxList{ic}) = 0;
-%         end 
+%         end
 %     end
 highlight =double(highlight);
 highlight(highlight==0) = nan;
@@ -521,6 +529,6 @@ plot([0,0],get(gca,'ylim'),'k--')
 
 legend([hM.mainLine,hS.mainLine,hsig], ...
     ['Intact'],['Scrambled'],['P<0.05 (corrected)']);
-      
+
 % save the figure to data location
 saveas(hf,[pathname filename(1:end-4)])
