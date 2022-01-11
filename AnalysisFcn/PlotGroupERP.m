@@ -88,18 +88,18 @@ highlight(highlight==0) = nan;
 highlightcorr(highlightcorr==0) = nan;
 
 hf = figure;
-set(gca,'linewidth',1)
+set(gca,'linewidth',2)
 hold on
 
-hM = shadedErrorBar(Para.freq, y2plot(1,:),se2plot(1,:),{'color',[255 106 106]/255},1);
-hS = shadedErrorBar(Para.freq, y2plot(2,:), se2plot(2,:),{'color',[30 144 255]/255},1);
+hM = shadedErrorBar(Para.freq, y2plot(1,:),se2plot(1,:),{'color',[255 106 106]/255,'linewidth',1},1);
+hS = shadedErrorBar(Para.freq, y2plot(2,:), se2plot(2,:),{'color',[30 144 255]/255,'linewidth',1},1);
 
 hsig = plot(Para.freq,(max(y2plot(:))+0.1*range(y2plot(:)))*highlight,'-','color',[0.5 0.5 0.5],'LineWidth',2);
 hsigcorr = plot(Para.freq,(max(y2plot(:))+0.05*range(y2plot(:)))*highlightcorr,'-','color',[0 0 0],'LineWidth',2);
 
 title(filename(1:end-4))
 xlabel('Frequency (Hz)')
-ylabel('Power (a.u)')
+ylabel('Power (a.u.)')
 
 legend([hM.mainLine,hS.mainLine,hsig,hsigcorr], ...
     ['Intact'],['Scrambled'],['P<0.05'],['P<0.05 (corrected)'],'box','off');
@@ -170,21 +170,21 @@ for isub = unique(lmeTBL.Sub)'
 end
 
 % plot mean value
-plot(haBeta,[1,2],[mean(ysubbetaM),mean(ysubbetaS)],'-','Color',[0.4 0.4 0.4 1],'LineWidth',2)
-set(haBeta,'LineWidth',1)
+plot(haBeta,[1,2],[nanmean(ysubbetaM),nanmean(ysubbetaS)],'-','Color',[0.4 0.4 0.4 1],'LineWidth',2)
+set(haBeta,'LineWidth',1.5)
 % a = get(haBeta,'Children');
 % set(haBeta,'Children',[a(2:end);a(1)])
-plot(haGamma,[1,2],[mean(ysubgammaM),mean(ysubgammaS)],'-','Color',[0.4 0.4 0.4 1],'LineWidth',2)
-set(haGamma,'LineWidth',1)
+plot(haGamma,[1,2],[nanmean(ysubgammaM),nanmean(ysubgammaS)],'-','Color',[0.4 0.4 0.4 1],'LineWidth',2)
+set(haGamma,'LineWidth',1.5)
 % a = get(haGamma,'Children');
 % set(haGamma,'Children',[a(2:end);a(1)])
 
 if lmeStatsBeta.pValue < 0.05
-    hsigBeta = plot(haBeta,1.5,max(get(haBeta,'ylim')),'k*');
+    hsigBeta = plot(haBeta,1.5,max(get(haBeta,'ylim')),'k*','markersize',8);
     legend([hsigBeta],['P<0.05'],'box','off');
 end
 if lmeStatsGamma.pValue < 0.05
-    hsigGamma = plot(haGamma,1.5,max(get(haGamma,'ylim')),'k*');
+    hsigGamma = plot(haGamma,1.5,max(get(haGamma,'ylim')),'k*','markersize',8);
     legend([hsigGamma],['P<0.05'],'box','off');
 end
 % save the figure to data location
@@ -245,11 +245,11 @@ hsig = plot(Para.time,(max(y2plot(:))+0.3*range(y2plot(:)))*highlight,'k-','colo
 hsigcorr = plot(Para.time,(max(y2plot(:))+0.1*range(y2plot(:)))*highlightcorr,'-','color',[0 0 0]);
 
 plot([0,0],get(gca,'ylim'),'k--')
-legend([hM.mainLine,hS.mainLine,hsig], ...
-    ['Intact'],['Scrambled'],['P<0.05 (corrected)']);
+legend([hM.mainLine,hS.mainLine,hsig,hsigcorr], ...
+    ['Intact'],['Scrambled'],['P<0.05'],['P<0.05 (corrected)']);
 title(filename(1:end-4))
 xlabel('Time relative to camera change (sec)')
-ylabel('Normalised Power (a.u)')
+ylabel('Normalised Power (a.u.)')
 xlim([-0.5 1])
 % ylim([min(y2plot(:))-0.3*range(y2plot(:)),max(y2plot(:))+0.4*range(y2plot(:))]);
 
@@ -387,11 +387,11 @@ yfit=polyval(p,x);
 [RS,PS] = corrcoef(allCoordinates(:,3),metricS);
 
 hf1 = figure;
-hp1 = plot(x,y,'*'); hold on;
-hp2 = plot(x,yfit,'k-');
+hp1 = plot(y,x,'*'); hold on;
+hp2 = plot(yfit,x,'k-');
 
-xlabel('Z coordinates (mm)')
-ylabel('Coherence')
+xlabel('Coherence')
+ylabel('Z coordinates (mm)')
 
 legend(hp2,['r = ' num2str(R(1,2)) ', p= ' num2str(P(1,2))])
 
@@ -412,6 +412,10 @@ highlight(ps>=0.05) = nan;
 hf2 = figure;
 plot(Para.timePT,rs);hold on;
 hsig = plot(Para.timePT,max(rs)+0.3*range(rs)*highlight,'k*');
+
+xlim([-0.5 1])
+xlabel('Time relative to camera change')
+ylabel('Correlation coefficient')
 
 % save the figure to data location
 saveas(hf1,[pathname filename(1:end-4)])
