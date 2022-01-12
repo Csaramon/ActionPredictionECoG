@@ -2,7 +2,7 @@ function varargout = batchCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'BP'
+    calculate = 'BPlatency'
 end
 
 % initialize base path and toolbox
@@ -86,6 +86,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
     trlIndexM = [];
     trlIndexS = [];
     nelec = 1;
+    allCoordinates = [];
     Para.elecposMNI = [];
     Para.time = [];
     Para.freq = [];
@@ -1072,7 +1073,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         if strcmp(calculate,'BP')
             
             timeRange = [-0.5 1];
-            freqRange = [20 30] ; % [20 30] [60 90]
+            freqRange = [60 90] ; % [20 30] [60 90]
             
             %%%%%%%%%%%%%%% load trl data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1128,10 +1129,10 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             cfg.channel = ROIelec;
             cfg.output       = 'pow';
             cfg.method       = 'mtmconvol';
-            cfg.foi          = min(freqRange):max(freqRange);
-            cfg.t_ftimwin  = 4./cfg.foi;
+            cfg.foi          = min(freqRange):2:max(freqRange);
+            cfg.t_ftimwin  = 14./cfg.foi;
             cfg.tapsmofrq  = 0.3 *cfg.foi; % tapers=2*tw*fw-1
-            cfg.toi          = 'all';%min(timeRange):0.01:max(timeRange);
+            cfg.toi          = min(timeRange):0.01:max(timeRange);'all';
             cfg.keeptrials = 'yes';
             %                                 cfg.precision = 'single';
             cfg.pad='nextpow2';
@@ -1208,6 +1209,129 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             
             
         end
+        
+        
+        %% section5-1: calculate band power coordinates correlation%%
+        %%%%%%%%%%%%%%%%%%%%%%%%
+        if strcmp(calculate,'BPcorr')
+            
+            timeRange = [-0.5 1];
+            freqRange = [20 30] ; % [20 30] [60 90]
+            
+            %%%%%%%%%%%%%%% load trl data %%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            datafile = dir([dataPath subname 'LAR_trlData.mat']);
+            load([datafile.folder filesep datafile.name]);
+            
+            % choose ROI electrodes according to MNI coordinates
+            elecposMNI = trlData.elec.elecposMNI;
+            tempdev = pdist2(elecposMNI,aparc_coordiantes);
+            [it,~] = find(tempdev <=roiDist);
+            ROIelec = unique(it);
+            
+            cfg = [];
+            cfg.demean = 'yes';
+            cfg.detrend = 'yes';
+            
+            trlData = ft_preprocessing(cfg,trlData);
+            
+            % skip bad channels
+            badChanInd = trlData.trial{1,1}(ROIelec,1)==0;
+            ROIelec(badChanInd) = [];
+            
+            % skip if no electrode pair
+            if ~any(ROIelec)
+                continue
+            end
+            
+            % seperate conditions
+            cfg = [];
+            cfg.trials = find(trlData.trialinfo(:,1)==0);
+            trlDataM = ft_selectdata(cfg,trlData);
+            
+            cfg = [];
+            cfg.trials = find(trlData.trialinfo(:,1)==1);
+            trlDataS = ft_selectdata(cfg,trlData);
+            
+            clear trlData
+            
+            % time-frequency decomposition (wavelet)
+            %             cfg              = [];
+            %             cfg.channel  = ROIelec;
+            %             cfg.output       = 'pow';
+            %             cfg.method       = 'wavelet';
+            %             cfg.foi          = min(freqRange):max(freqRange);
+            %             cfg.width        =  7;
+            %             cfg.toi          = min(timeRange):0.01:max(timeRange);
+            %             cfg.precision = 'single';
+            %             cfg.keeptrials = 'yes';
+            %             cfg.pad='nextpow2';
+            
+            % multi taper
+            cfg              = [];
+            cfg.channel = ROIelec;
+            cfg.output       = 'pow';
+            cfg.method       = 'mtmconvol';
+            cfg.foi          = min(freqRange):1:max(freqRange);
+            cfg.t_ftimwin  = 4./cfg.foi;
+            cfg.tapsmofrq  = 0.3 *cfg.foi; % tapers=2*tw*fw-1
+            cfg.toi          = min(timeRange):0.01:max(timeRange);'all';
+            cfg.keeptrials = 'yes';
+            %                                 cfg.precision = 'single';
+            cfg.pad='nextpow2';
+            
+            ft_warning off
+            freqM = ft_freqanalysis(cfg,trlDataM);
+            
+            freqS = ft_freqanalysis(cfg,trlDataS);
+            
+            % raw power
+            
+            % normalise power
+            tmpPowerM = freqM.powspctrm;
+            tmpPowerS =freqS.powspctrm;
+            %             minPower = min(min(cat(1,tmpPowerM,tmpPowerS),[],1),[],4);
+            %             maxPower = max(max(cat(1,tmpPowerM,tmpPowerS),[],1),[],4);
+            %             minPowerM = repmat(minPower,size(tmpPowerM,1),1,1,size(tmpPowerM,4));
+            %             maxPowerM = repmat(maxPower,size(tmpPowerM,1),1,1,size(tmpPowerM,4));
+            %             minPowerS = repmat(minPower,size(tmpPowerS,1),1,1,size(tmpPowerS,4));
+            %             maxPowerS = repmat(maxPower,size(tmpPowerS,1),1,1,size(tmpPowerS,4));
+            
+            %             metricM = (tmpPowerM-minPowerM)./(maxPowerM-minPowerM);
+            metricM = tmpPowerM;
+            metricM = nanmean(metricM,3);
+            
+            
+            %             metricS = (tmpPowerS-minPowerS)./(maxPowerS-minPowerS);
+            metricS = tmpPowerS;
+            metricS = nanmean(metricS,3);
+            
+            allCoordinates = [allCoordinates;elecposMNI(ROIelec,:)];
+            
+            %---------- elec level ----------%
+            metricM = squeeze(mean(metricM,1));
+            metricS = squeeze(mean(metricS,1));
+            if size(metricM,1) > size(metricM,2)
+                metricM = metricM';
+                metricS =metricS';
+            end
+            
+            % concontenate all trial responses in chosen ROI
+            allMetricM = cat(1,allMetricM,metricM);
+            allMetricS = cat(1,allMetricS,metricS);
+            
+            Para.time = freqM.time;
+            Para.freq = freqM.freq;
+            
+            if ~exist([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4)],'file')
+                mkdir([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4)])
+            end
+            save([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ...
+                ROIText{iatlas}],'allMetricM','allMetricS','allCoordinates','Para');
+            
+            
+        end
+        
         
         %% section5-2: calculate band power of all movies%%
         %%%%%%%%%%%%%%%%%%%%%%%%
@@ -1340,6 +1464,137 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             
             
         end
+        
+        
+        %% section5-4: calculate response latency after camera change %%
+        %%%%%%%%%%%%%%%%%%%%%%%%
+        if strcmp(calculate,'BPlatency')
+            
+            timeRange = [-0.5 1];
+            baselineT = [-0.5 0];
+            shuffleTimes = 200;
+            statP = 0.05;
+            clusterP = 0.05;
+            freqRange = [60 90] ; % [20 30] [60 90]
+            
+            %%%%%%%%%%%%%%% load trl data %%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            datafile = dir([dataPath subname 'LAR_trlData.mat']);
+            load([datafile.folder filesep datafile.name]);
+            
+            % choose ROI electrodes according to MNI coordinates
+            elecposMNI = trlData.elec.elecposMNI;
+            tempdev = pdist2(elecposMNI,aparc_coordiantes);
+            [it,~] = find(tempdev <=roiDist);
+            ROIelec = unique(it);
+            
+            cfg = [];
+            cfg.demean = 'yes';
+            cfg.detrend = 'yes';
+            
+            trlData = ft_preprocessing(cfg,trlData);
+            
+            % skip bad channels
+            badChanInd = trlData.trial{1,1}(ROIelec,1)==0;
+            ROIelec(badChanInd) = [];
+            
+            % skip if no electrode pair
+            if ~any(ROIelec)
+                continue
+            end
+            
+            % seperate conditions
+            cfg = [];
+            cfg.trials = find(trlData.trialinfo(:,1)==0);
+            trlDataM = ft_selectdata(cfg,trlData);
+            
+            cfg = [];
+            cfg.trials = find(trlData.trialinfo(:,1)==1);
+            trlDataS = ft_selectdata(cfg,trlData);
+            
+            clear trlData
+            
+            % time-frequency decomposition (wavelet)
+            %             cfg              = [];
+            %             cfg.channel  = ROIelec;
+            %             cfg.output       = 'pow';
+            %             cfg.method       = 'wavelet';
+            %             cfg.foi          = min(freqRange):max(freqRange);
+            %             cfg.width        =  7;
+            %             cfg.toi          = min(timeRange):0.01:max(timeRange);
+            %             cfg.precision = 'single';
+            %             cfg.keeptrials = 'yes';
+            %             cfg.pad='nextpow2';
+            
+            % multi taper
+            cfg              = [];
+            cfg.channel = ROIelec;
+            cfg.output       = 'pow';
+            cfg.method       = 'mtmconvol';
+            cfg.foi          = min(freqRange):2:max(freqRange);
+            cfg.t_ftimwin  = 14./cfg.foi;
+            cfg.tapsmofrq  = 0.3 *cfg.foi; % tapers=2*tw*fw-1
+            cfg.toi          = min(timeRange):0.01:max(timeRange);'all';
+            cfg.keeptrials = 'yes';
+            %                                 cfg.precision = 'single';
+            cfg.pad='nextpow2';
+            
+            ft_warning off
+            freqM = ft_freqanalysis(cfg,trlDataM);
+            
+            freqS = ft_freqanalysis(cfg,trlDataS);
+            
+            % raw power
+            
+            % normalise power
+            tmpPowerM = freqM.powspctrm;
+            tmpPowerS =freqS.powspctrm;
+            %             minPower = min(min(cat(1,tmpPowerM,tmpPowerS),[],1),[],4);
+            %             maxPower = max(max(cat(1,tmpPowerM,tmpPowerS),[],1),[],4);
+            %             minPowerM = repmat(minPower,size(tmpPowerM,1),1,1,size(tmpPowerM,4));
+            %             maxPowerM = repmat(maxPower,size(tmpPowerM,1),1,1,size(tmpPowerM,4));
+            %             minPowerS = repmat(minPower,size(tmpPowerS,1),1,1,size(tmpPowerS,4));
+            %             maxPowerS = repmat(maxPower,size(tmpPowerS,1),1,1,size(tmpPowerS,4));
+            
+            %             metricM = (tmpPowerM-minPowerM)./(maxPowerM-minPowerM);
+            metricM = tmpPowerM;
+            metricM = nanmean(metricM,3);
+            
+            
+            %             metricS = (tmpPowerS-minPowerS)./(maxPowerS-minPowerS);
+            metricS = tmpPowerS;
+            metricS = nanmean(metricS,3);
+            
+            
+            %---------- elec level ----------%
+            metricM = squeeze(mean(metricM,1));
+            metricS = squeeze(mean(metricS,1));
+            if size(metricM,1) > size(metricM,2)
+                metricM = metricM';
+                metricS =metricS';
+            end
+            
+            %                 elecIndexM =  cat(1,elecIndexM,isub*1000+allChanCmb);
+            elecIndexM =  cat(1,elecIndexM,[nelec:nelec+numel(ROIelec)-1]');
+            subIndexM = cat(1,subIndexM,repmat(isub,numel(ROIelec),1));
+            
+            %                 elecIndexS = cat(1,elecIndexS,isub*1000+allChanCmb);
+            elecIndexS = cat(1,elecIndexS,[nelec:nelec+numel(ROIelec)-1]');
+            subIndexS = cat(1,subIndexS,repmat(isub,numel(ROIelec),1));
+            
+            % concontenate all trial responses in chosen ROI
+            allMetricM = cat(1,allMetricM,metricM);
+            allMetricS = cat(1,allMetricS,metricS);
+            
+            
+            Para.elecposMNI = [Para.elecposMNI;freqM.elec.elecposMNI(ROIelec,:)];
+            Para.time = freqM.time;
+            Para.freq = freqM.freq;
+            nelec = nelec+numel(ROIelec);
+            
+            
+        end
+        
         
         
         %% section6: calculate PAC %%
@@ -1867,6 +2122,223 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
     end
     
     
+    %% section5-1: calculate response onset %%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if strcmp(calculate,'BPlatency')
+        CondIndexM = ones(size(subIndexM));
+        CondIndexS = 2*ones(size(subIndexS));
+        allMetricM = squeeze(allMetricM);
+        allMetricS = squeeze(allMetricS);
+        
+        tMap = zeros(1,size(allMetricM,2));
+        pMap = zeros(1,size(allMetricM,2));
+        y2plot = zeros(2,size(allMetricM,2));
+        se2plot = zeros(2,size(allMetricM,2));
+        yraw = zeros(2,size(allMetricM,2));
+        seraw = zeros(2,size(allMetricM,2));
+        
+        strlen = 0;
+        % point wise LME for Intact condition
+        for itime = 1:size(allMetricM,2)
+            
+            s = ['Calculating tf point: ' num2str(itime) '/' num2str(size(allMetricM,2)) 'times'];
+            strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
+            strlen = strlentmp - strlen;
+            
+            frameDataM = double(squeeze(allMetricM(:,itime)));
+            baselineM = mean(allMetricM(:,(Para.time>=baselineT(1)&Para.time<=baselineT(2))),2);
+            % skip nan point
+            if ~any(frameDataM,'all')
+                continue
+            end
+            
+            lmeTBL = table([frameDataM;baselineM],[CondIndexM;CondIndexS],[subIndexM;subIndexM], ...
+                [elecIndexM;elecIndexM], 'VariableNames',{'Y','Cond','Sub','Elec'});
+            lmeTBL.Cond = nominal(lmeTBL.Cond);
+            lmeTBL.Sub = nominal(lmeTBL.Sub);
+            lmeTBL.Elec = nominal(lmeTBL.Elec);
+            lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
+            
+            [~,~,lmeStats] = fixedEffects(lmeStruct);
+            tMap(1,itime) = lmeStats.tStat(2);
+            pMap(1,itime) = lmeStats.pValue(2);
+            [randBeta,~,~] = randomEffects(lmeStruct);
+            Z = designMatrix(lmeStruct,'random');
+            Ycorr = lmeTBL.Y-Z*randBeta;
+            obsVal1 = Ycorr(lmeTBL.Cond=='1');
+            obsVal2 = Ycorr(lmeTBL.Cond=='2');
+            y2plot(:,itime) = [nanmean(obsVal1);nanmean(obsVal2)];
+            se2plot(:,itime) = [nanstd(obsVal1)./sqrt(numel(obsVal1));nanstd(obsVal2)./sqrt(numel(obsVal2))];
+            rawVal1 = lmeTBL.Y(lmeTBL.Cond=='1');
+            rawVal2 = lmeTBL.Y(lmeTBL.Cond=='2');
+            yraw(:,itime) = [mean(rawVal1);mean(rawVal2)];
+            seraw(:,itime) = [std(rawVal1)./sqrt(numel(rawVal1));std(rawVal2)./sqrt(numel(rawVal2))];
+        end
+        
+        highlight = pMap < statP;
+        % remove significant clusters shorter than 100ms
+        Ls = bwconncomp(highlight,4);
+        lenths = [];
+        for ic = 1:numel(Ls.PixelIdxList)
+            yy = Ls.PixelIdxList{ic};
+            if Para.time(max(yy))-Para.time(min(yy)) < 0.05
+                highlight(Ls.PixelIdxList{ic}) = 0;
+            end
+        end
+        highlight =double(highlight);
+        highlight(highlight==0) = nan;
+
+        activeOnsetM = Para.time(find(highlight==1&Para.time>0,1));
+        
+        
+        strlen = 0;
+        % point wise LME for Scrambled condition
+        for itime = 1:size(allMetricS,2)
+            
+            s = ['Calculating tf point: ' num2str(itime) '/' num2str(size(allMetricS,2)) 'times'];
+            strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
+            strlen = strlentmp - strlen;
+            
+            frameDataS = double(squeeze(allMetricS(:,itime)));
+            baselineS = mean(allMetricS(:,(Para.time>=baselineT(1)&Para.time<=baselineT(2))),2);
+            % skip nan point
+            if ~any(frameDataS,'all')
+                continue
+            end
+            
+            lmeTBL = table([frameDataS;baselineS],[CondIndexM;CondIndexS],[subIndexS;subIndexS], ...
+                [elecIndexS;elecIndexS], 'VariableNames',{'Y','Cond','Sub','Elec'});
+            lmeTBL.Cond = nominal(lmeTBL.Cond);
+            lmeTBL.Sub = nominal(lmeTBL.Sub);
+            lmeTBL.Elec = nominal(lmeTBL.Elec);
+            lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
+            
+            [~,~,lmeStats] = fixedEffects(lmeStruct);
+            tMap(1,itime) = lmeStats.tStat(2);
+            pMap(1,itime) = lmeStats.pValue(2);
+            [randBeta,~,~] = randomEffects(lmeStruct);
+            Z = designMatrix(lmeStruct,'random');
+            Ycorr = lmeTBL.Y-Z*randBeta;
+            obsVal1 = Ycorr(lmeTBL.Cond=='1');
+            obsVal2 = Ycorr(lmeTBL.Cond=='2');
+            y2plot(:,itime) = [nanmean(obsVal1);nanmean(obsVal2)];
+            se2plot(:,itime) = [nanstd(obsVal1)./sqrt(numel(obsVal1));nanstd(obsVal2)./sqrt(numel(obsVal2))];
+            rawVal1 = lmeTBL.Y(lmeTBL.Cond=='1');
+            rawVal2 = lmeTBL.Y(lmeTBL.Cond=='2');
+            yraw(:,itime) = [mean(rawVal1);mean(rawVal2)];
+            seraw(:,itime) = [std(rawVal1)./sqrt(numel(rawVal1));std(rawVal2)./sqrt(numel(rawVal2))];
+        end
+        
+                highlight = pMap < statP;
+        % remove significant clusters shorter than 100ms
+        Ls = bwconncomp(highlight,4);
+        lenths = [];
+        for ic = 1:numel(Ls.PixelIdxList)
+            yy = Ls.PixelIdxList{ic};
+            if Para.time(max(yy))-Para.time(min(yy)) < 0.05
+                highlight(Ls.PixelIdxList{ic}) = 0;
+            end
+        end
+        highlight =double(highlight);
+        highlight(highlight==0) = nan;
+
+        activeOnsetS = Para.time(find(highlight==1&Para.time>0,1));
+        
+        if ~exist([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4)],'file')
+            mkdir([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4)])
+        end
+        save([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ROIText{iatlas}], ...
+            'activeOnsetM','activeOnsetS','Para');
+        
+        
+    end
+    
+    %% section5-4: calculate response onset using permutation test %%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if strcmp(calculate,'BPlatencyPerm')
+        
+        allMetricM = squeeze(allMetricM);
+        allMetricS = squeeze(allMetricS);
+        
+        blValM = mean(allMetricM(:,(Para.time>=baselineT(1)&Para.time<=baselineT(2))),2);
+        blValM = repmat(blValM,1,size(allMetricM,2));
+        blValS = mean(allMetricS(:,(Para.time>=baselineT(1)&Para.time<=baselineT(2))),2);
+        blValS = repmat(blValS,1,size(allMetricS,2));
+        
+        % calculate observed value
+        [~,obsStatAllM,obsLM,obsSTATSM] = calculateTtestClusterStat(allMetricM,blValM,statP,'maxsum');
+        
+        [~,obsStatAllS,obsLS,obsSTATSS] = calculateTtestClusterStat(allMetricS,blValS,statP,'maxsum');
+        
+        strlen = 0;
+        
+        % cluster based permutation
+        for ishf = 1:shuffleTimes
+            
+            s = ['Calculating permutation: ' num2str(ishf) '/' num2str(shuffleTimes) ' times'];
+            strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
+            strlen = strlentmp - strlen;
+            
+            shfInd = randi([round(0.1*size(allMetricM,2)),round(0.9*size(allMetricM,2))]);
+            tmpShfM = [allMetricM(:,shfInd:end),allMetricM(:,1:shfInd-1)];
+            tmpShfS = [allMetricS(:,shfInd:end),allMetricS(:,1:shfInd-1)];
+            
+            shfblValM = mean(tmpShfM(:,(Para.time>baselineT(1)&Para.time<baselineT(2))),2);
+            shfblValM = repmat(shfblValM,1,size(tmpShfM,2));
+            
+            shfblValS = mean(tmpShfS(:,(Para.time>baselineT(1)&Para.time<baselineT(2))),2);
+            shfblValS = repmat(shfblValS,1,size(tmpShfS,2));
+            
+            [shfStatM(ishf),~,~,~] = calculateTtestClusterStat(tmpShfM,shfblValM,statP,'maxsum');
+            [shfStatS(ishf),~,~,~] = calculateTtestClusterStat(tmpShfS,shfblValS,statP,'maxsum');
+            
+        end
+        
+        % for Intact condition
+        shfStatMsorted = sort(shfStatM);
+        clusterThreshM = shfStatMsorted(ceil(length(shfStatMsorted)*(1-clusterP)));
+        
+        sigMaskM = zeros(size(Para.time));
+        sigClusterIndxM = find(abs(obsStatAllM) > clusterThreshM);
+        
+        for istat = sigClusterIndxM'
+            if ~isempty(obsLM.PixelIdxList)
+                sigIndex = obsLM.PixelIdxList{istat};
+                sigMaskM(sigIndex') = 1;
+            end
+        end
+        
+        activeOnsetM = Para.time(find(sigMaskM==1,1));
+        sigMaskM(sigMaskM == 0) = nan;
+        
+        % for Scrambled condition
+        shfStatSsorted = sort(shfStatS);
+        clusterThreshS = shfStatSsorted(ceil(length(shfStatSsorted)*(1-clusterP)));
+        
+        sigMaskS = zeros(size(Para.time));
+        sigClusterIndxS = find(abs(obsStatAllS) > clusterThreshS);
+        
+        for istat = sigClusterIndxS'
+            if ~isempty(obsLS.PixelIdxList)
+                sigIndex = obsLS.PixelIdxList{istat};
+                sigMaskS(sigIndex') = 1;
+            end
+        end
+        
+        activeOnsetS = Para.time(find(sigMaskS==1,1));
+        sigMaskS(sigMaskS == 0) = nan;
+        
+        % save data
+        if ~exist([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4)],'file')
+            mkdir([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4)])
+        end
+        save([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ROIText{iatlas}], ...
+            'Para','allMetricM','allMetricM','sigMaskM','sigMaskS','activeOnsetM','activeOnsetS');
+        
+        
+    end
+    
+    
     
     %% section6: calculate PAC %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1934,4 +2406,47 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
 end
 
 varargout{1} = toc/3600;
+
+end
+
+
+%% -------- Sub functions --------
+
+%% cluster based permutation test subfcn (ttest based)
+function [cStat,cStatAll,L,cSTATS] = calculateTtestClusterStat(dataA,dataB,pvalue,metric)
+
+
+[Hi,~,~,cSTATS] = ttest(dataA,dataB,'alpha',pvalue,'tail','both');%,'tail','right'
+
+tpic = Hi.*cSTATS.tstat;
+bipic = (tpic~=0);       %bianarization
+L = bwconncomp(bipic,8);
+switch metric
+    case 'maxsum'
+        statistic_tMap= regionprops(L,tpic,'PixelValues');
+        cStatAll = zeros(size(statistic_tMap));
+        
+        for is = 1:size(statistic_tMap,1)
+            
+            cStatAll(is) = sum(statistic_tMap(is).PixelValues);
+            
+            
+        end
+        cStat = max(abs(cStatAll));
+        
+        
+    case 'maxsize'
+        cluster_area = regionprops(L,'Area');
+        cStat = max(cat(1,cluster_area.Area));
+        
+        
+end
+
+% no significant cluster
+if isempty(cStatAll)
+    cStat = 0;
+    cStatAll = 0;
+end
+
+end
 

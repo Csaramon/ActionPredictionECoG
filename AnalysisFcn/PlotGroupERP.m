@@ -209,29 +209,34 @@ pMap(pMap==0)=nan;
 highlight = double(pMap< 0.05);
 
 % Bofforoni  correction
-% highlight = pMap< 0.05/numel(pMap);
+% highlightcorr = pMap< 0.05/numel(pMap);
 
 % FDR  correction
-[p_fdr, p_masked] = fdr(pMap, 0.05);
-highlightcorr = p_masked;
+% [p_fdr, p_masked] = fdr(pMap, 0.05);
+% highlightcorr = p_masked;
+
+corrTimeInd = Para.time>=-0.5 & Para.time<=1;
+[p_fdr, p_masked] = fdr(pMap(corrTimeInd), 0.05');
+highlightcorr = pMap<=p_fdr;
+
 
 % the significant points could be marked with a red stars
 highlight =double(highlight);
 highlightcorr =double(highlightcorr);
 highlight(highlight==0) = nan;
-highlightcorr(highlightcorr==0) = nan;
 
-% remove significant clusters shorter than 100ms
-% Ls = bwconncomp(highlight,4);
-% lenths = [];
-% for ic = 1:numel(Ls.PixelIdxList)
-%     yy = Ls.PixelIdxList{ic};
-%     if Para.time(max(yy))-Para.time(min(yy)) < 0.1
-%         highlight(Ls.PixelIdxList{ic}) = 0;
-%     end
-% end
-% highlight =double(highlight);
-% highlight(highlight==0) = nan;
+
+% remove significant clusters shorter than 50ms
+Ls = bwconncomp(highlightcorr,4);
+lenths = [];
+for ic = 1:numel(Ls.PixelIdxList)
+    yy = Ls.PixelIdxList{ic};
+    if Para.time(max(yy))-Para.time(min(yy)) < 0.05
+        highlightcorr(Ls.PixelIdxList{ic}) = 0;
+    end
+end
+highlightcorr =double(highlightcorr);
+highlightcorr(highlightcorr==0) = nan;
 
 % the significant points could be marked with a red stars
 
@@ -249,7 +254,7 @@ legend([hM.mainLine,hS.mainLine,hsig,hsigcorr], ...
     ['Intact'],['Scrambled'],['P<0.05'],['P<0.05 (corrected)']);
 title(filename(1:end-4))
 xlabel('Time relative to camera change (sec)')
-ylabel('Normalised Power (a.u.)')
+ylabel('Power (a.u.)')
 xlim([-0.5 1])
 % ylim([min(y2plot(:))-0.3*range(y2plot(:)),max(y2plot(:))+0.4*range(y2plot(:))]);
 
@@ -361,6 +366,64 @@ ylabel('Coherence (a.u)')
 ylim([min(y2plot(:))-0.3*range(y2plot(:)),max(y2plot(:))+0.4*range(y2plot(:))]);
 
 
+%% plot power coordinates correlation
+
+clear;
+[filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/COH/*.mat']);
+
+if ~filterindex
+    return
+end
+
+% load in TFR LMEM
+load([pathname filename])
+
+
+metricM = mean(allMetricM(:,51:151),2);
+metricS = mean(allMetricS(:,51:151),2);
+
+y = metricM;
+x = allCoordinates(:,3);
+p=polyfit(x,y,1);
+yfit=polyval(p,x);
+
+[R,P] = corrcoef(x,y);
+[RS,PS] = corrcoef(allCoordinates(:,3),metricS);
+
+hf1 = figure;
+hp1 = plot(y,x,'*'); hold on;
+hp2 = plot(yfit,x,'k-');
+
+xlabel('Coherence')
+ylabel('Z coordinates (mm)')
+
+legend(hp2,['r = ' num2str(R(1,2)) ', p= ' num2str(P(1,2))])
+
+rs = [];
+ps = [];
+for itime = 1:size(allMetricM,2)
+    metricM = allMetricM(:,itime);
+    metricS = allMetricS(:,itime);
+    y = metricM;
+    x = allCoordinates(:,3);
+    [R,P] = corrcoef(x,y);
+    rs(itime) = R(1,2);
+    ps(itime) = P(1,2);
+end
+highlight =ones(size(ps));
+highlight(ps>=0.05) = nan;
+
+hf2 = figure;
+plot(Para.time,rs);hold on;
+hsig = plot(Para.time,max(rs)+0.3*range(rs)*highlight,'k-');
+
+xlim([-0.5 1])
+xlabel('Time relative to camera change')
+ylabel('Correlation coefficient')
+
+% save the figure to data location
+saveas(hf1,[pathname filename(1:end-4)])
+
 %% plot coherence coordinates correlation
 
 clear;
@@ -378,7 +441,7 @@ foi  = Para.freq>20 & Para.freq<30;
 metricM = mean(allMetricM(:,foi,14),2);
 metricS = mean(allMetricS(:,foi,14),2);
 
-y = metricM;
+y = metricS;
 x = allCoordinates(:,3);
 p=polyfit(x,y,1);
 yfit=polyval(p,x);

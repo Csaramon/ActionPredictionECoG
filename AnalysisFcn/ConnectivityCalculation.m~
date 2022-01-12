@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'COHcorr'
+    calculate = 'COHviews'
 end
 
 % initialize base path and toolbox
@@ -46,7 +46,7 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1];
+seedIndex = [3];
 searchIndex = [7];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
@@ -54,9 +54,9 @@ for iseed = seedIndex
     for isearch = searchIndex
         
         %                 skip redundant pairs
-%         if ~ismember([iseed,isearch],allPair,'rows')
-%             continue
-%         end
+        %         if ~ismember([iseed,isearch],allPair,'rows')
+        %             continue
+        %         end
         
         if iseed==isearch
             continue
@@ -852,8 +852,8 @@ for iseed = seedIndex
                 
                 
             end
- 
-                        %% section2-3: calculate Coherence correlation with coordiantes %%
+            
+            %% section2-4: calculate Coherence correlation with coordiantes %%
             %%%%%%%%%%%%%%%%%%%%%a%%%
             if strcmp(calculate,'COHcorr')
                 
@@ -980,9 +980,204 @@ for iseed = seedIndex
                 
                 allChanCmb = [allChanCmb;seedElec];
                 allCoordinates = [allCoordinates;elecposMNI(seedElec,:)];
-   
+                
                 allMetricM = cat(1,allMetricM,allcohM);
                 allMetricS = cat(1,allMetricS,allcohS);
+                
+                
+                Para.chanCMB{isub} = allChanCmb;
+                Para.timeWin = timeWin;
+                Para.timeStep = timeStep;
+                Para.timePT = timePt;
+                Para.freq = freqM.freq;
+                
+                if ~exist([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)],'file')
+                    mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)])
+                end
+                save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) filesep ...
+                    ROIText{iseed} '_'  ROIText{isearch}],'allMetricM','allMetricS','allCoordinates','Para');
+                
+            end
+            
+            
+            %% section2-5: calculate Coherence difference between views %%
+            %%%%%%%%%%%%%%%%%%%%%a%%%
+            if strcmp(calculate,'COHviews')
+                
+                p=0.05; % threshold for IVC
+                timeWin = 1; % unit in second
+                timeStep = 0.1; % unit in second
+                
+                
+                %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                datafile = dir([dataPath subname 'LAR_trlData.mat']);
+                load([datafile.folder filesep datafile.name]);
+                
+                if exist([dataPath subname 'IVC.mat'],'file')
+                    load([dataPath subname 'IVC']);
+                end
+                
+                respElecInd = find(IVC.Intact.theta(:,2)<p | IVC.Intact.alpha(:,2)<p | IVC.Intact.beta(:,2)<p | ...
+                    IVC.Intact.lgamma(:,2)<p | IVC.Intact.hgamma(:,2)<p | IVC.Scamble.theta(:,2)<p | ...
+                    IVC.Scamble.alpha(:,2)<p | IVC.Scamble.beta(:,2)<p | IVC.Scamble.lgamma(:,2)<p | IVC.Scamble.hgamma(:,2)<p);
+                
+                % choose seed electrodes according to MNI coordinates
+                elecposMNI = trlData.elec.elecposMNI;
+                tempdev = pdist2(elecposMNI,seed_coordiantes);
+                [it,~] = find(tempdev <=roiDist);
+                seedElec = unique(it);
+                %                 seedElec = intersect(seedElec,respElecInd);
+                
+                % choose search electrodes according to MNI coordinates
+                tempdev = pdist2(elecposMNI,search_coordiantes);
+                [it,~] = find(tempdev <=roiDist);
+                searchElec = unique(it);
+                %                 searchElec = intersect(searchElec,respElecInd);
+                
+                cfg = [];
+                cfg.demean = 'yes';
+                cfg.detrend = 'yes';
+                
+                trlData = ft_preprocessing(cfg,trlData);
+                
+                % skip bad channels
+                badChanInd = trlData.trial{1,1}(seedElec,1)==0;
+                seedElec(badChanInd) = [];
+                
+                badChanInd = trlData.trial{1,1}(searchElec,1)==0;
+                searchElec(badChanInd) = [];
+                
+                % skip if no electrode pair
+                if ~any(seedElec) | ~any(searchElec) | isempty(setdiff(seedElec,searchElec))
+                    continue
+                end
+                
+                % for Intact condition
+                cfg = [];
+                cfg.trials = find(trlData.trialinfo(:,1)==0);
+                trlData = ft_selectdata(cfg,trlData);
+                
+                % for Scrambled condition
+%                                 cfg = [];
+%                                 cfg.trials = find(trlData.trialinfo(:,1)==1);
+%                                 trlData = ft_selectdata(cfg,trlData);
+                
+                camInfo = trlData.trialinfo;
+                if size(camInfo,1) >795
+                    camInfo = camInfo(1:795,:);
+                end
+                uniMovie = unique(camInfo(:,2));
+                view1Ind = [];
+                view2Ind = [];
+                for im = uniMovie'
+                    tempMovieInd = find(camInfo(:,2)==im);
+                    view1Ind = [view1Ind;tempMovieInd(1:numel(tempMovieInd)/2)];
+                    view2Ind = [view2Ind;tempMovieInd(numel(tempMovieInd)/2+1:end)];
+                end
+                if size(camInfo,1) <= 600
+                    trlDataM = trlData;
+                    trlDataS = trlData;
+                else
+                    cfg = [];
+                    cfg.trials = view1Ind;
+                    trlDataM = ft_selectdata(cfg,trlData);
+                    
+                    cfg = [];
+                    cfg.trials = view2Ind;
+                    trlDataS = ft_selectdata(cfg,trlData);
+                end
+                
+                
+                timeRange = [min(trlData.time{1}) max(trlData.time{1})];
+                
+                clear trlData
+                
+                % calculate pairwise COH
+                Npair = 1;
+                allChanCmb = [];
+                duplicateInd = intersect(searchElec,seedElec);
+                if ~isempty(duplicateInd)
+                    if numel(searchElec) > numel(seedElec)
+                        searchElec = setdiff(searchElec,duplicateInd);
+                    else
+                        seedElec = setdiff(seedElec,duplicateInd);
+                    end
+                end
+                
+                in = 1;
+                allcohM = [];
+                allcohS = [];
+                for itw = min(timeRange):timeStep:max(timeRange)-timeWin
+                    
+                    % choose time window
+                    cfg = [];
+                    cfg.latency = [itw itw+timeWin];
+                    trlDataMtmp = ft_selectdata(cfg,trlDataM);
+                    
+                    cfg = [];
+                    cfg.latency = [itw itw+timeWin];
+                    trlDataStmp = ft_selectdata(cfg,trlDataS);
+                    
+                    % calculate fourier spectrum using multi taper
+                    cfg            = [];
+                    cfg.output     = 'fourier';
+                    cfg.method     = 'mtmfft';
+                    %                                         cfg.foilim     = [2 120];
+                    cfg.foi          = 2:1:120;
+                    %                     cfg.taper      =  'hanning';
+                    cfg.tapsmofrq  = 6;
+                    cfg.keeptrials = 'yes';
+                    cfg.pad='nextpow2';
+                    
+                    
+                    freqM    = ft_freqanalysis(cfg, trlDataMtmp);
+                    
+                    freqS    = ft_freqanalysis(cfg, trlDataStmp);
+                    
+                    % calculate COH in Matched Condition
+                    cfg            = [];
+                    cfg.method     = 'coh';
+                    cfg.complex = 'absimag';
+                    cfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
+                    COHM             = ft_connectivityanalysis(cfg, freqM);
+                    allcohM(:,:,in) = COHM.cohspctrm;
+                    % calculate COH in Scambled Condition
+                    cfg.channelcmb = {trlDataS.label(seedElec) trlDataS.label(searchElec)};
+                    COHS             = ft_connectivityanalysis(cfg, freqS);
+                    allcohS(:,:,in) = COHS.cohspctrm;
+                    
+                    timePt(in) = itw+0.5*timeWin;
+                    in = in+1;
+                end
+                
+                allChanCmb = [allChanCmb;COHM.labelcmb];
+                
+                
+                % count for pairs of eletrodes
+                Npair = Npair + size(COHM.labelcmb,1);
+                
+                if size(camInfo,1) <= 600
+                    allcohS = [];
+                end
+                
+                % generate index for Subject Electrode and Trial
+                metricM = allcohM;
+                metricS = allcohS;
+                
+                %                 elecIndexM =  cat(1,elecIndexM,isub*1000+allChanCmb);
+                elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-2]');
+                subIndexM = cat(1,subIndexM,repmat(isub,Npair-1,1));
+                
+                %                 elecIndexS = cat(1,elecIndexS,isub*1000+allChanCmb);
+                if size(camInfo,1) <= 600
+                else
+                    elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-2]');
+                    subIndexS = cat(1,subIndexS,repmat(isub,Npair-1,1));
+                end
+                % concontenate all trial responses in chosen ROI
+                allMetricM = cat(1,allMetricM,metricM);
+                allMetricS = cat(1,allMetricS,metricS);
                 
                 
                 Para.chanCMB{isub} = allChanCmb;
@@ -995,7 +1190,7 @@ for iseed = seedIndex
                 
                 
             end
-     
+            
             
             %% section3: calculate Phase Slope Index (PSI)%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2316,7 +2511,7 @@ for iseed = seedIndex
         %% section2-2: calculate Coherence across trials(LMEM) %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if strcmp(calculate,'COHtrl') | strcmp(calculate,'COHtf')  ...
-                | strcmp(calculate,'PSItf') | strcmp(calculate,'GrangerTF')
+                | strcmp(calculate,'PSItf') | strcmp(calculate,'GrangerTF') |  strcmp(calculate,'COHviews')
             
             if ~any(allMetricM) | ~any(allMetricS)
                 continue
