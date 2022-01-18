@@ -64,12 +64,11 @@ load([pathname filename])
 tMap(tMap==0)=nan;
 pMap(tMap==0)=nan;
 
+lowFind = Para.freq <= 30;
+highFind = Para.freq > 30;
 % normalise
 y2plot = y2plot.*Para.freq;
 se2plot = se2plot.*Para.freq;
-% com2930 = y2plot(:,29)-y2plot(:,30);
-% y2plot(1,30:end) = y2plot(1,30:end)+mean(com2930);
-% y2plot(2,30:end) = y2plot(2,30:end)+mean(com2930);
 
 % uncorrected
 highlight = double(pMap< 0.05);
@@ -87,21 +86,33 @@ highlightcorr =double(highlightcorr);
 highlight(highlight==0) = nan;
 highlightcorr(highlightcorr==0) = nan;
 
-hf = figure;
+hf = figure('Position', [400 400 800 600]);
 set(gca,'linewidth',2)
 hold on
+xlim([0 120])
 
-hM = shadedErrorBar(Para.freq, y2plot(1,:),se2plot(1,:),{'color',[255 106 106]/255,'linewidth',1},1);
-hS = shadedErrorBar(Para.freq, y2plot(2,:), se2plot(2,:),{'color',[30 144 255]/255,'linewidth',1},1);
 
-hsig = plot(Para.freq,(max(y2plot(:))+0.1*range(y2plot(:)))*highlight,'-','color',[0.5 0.5 0.5],'LineWidth',2);
-hsigcorr = plot(Para.freq,(max(y2plot(:))+0.05*range(y2plot(:)))*highlightcorr,'-','color',[0 0 0],'LineWidth',2);
+yyaxis left
+ylabel('Power (a.u.)')
+hlowM = shadedErrorBar(Para.freq(lowFind), y2plot(1,lowFind),se2plot(1,lowFind),{'color',[255 106 106]/255,'linewidth',1,'linestyle','-'},1);
+
+hlowS = shadedErrorBar(Para.freq(lowFind), y2plot(2,lowFind), se2plot(2,lowFind),{'color',[30 144 255]/255,'linewidth',1,'linestyle','-'},1);
+
+hlowsig = plot(Para.freq(lowFind),(max(y2plot(:,lowFind),[],'all')+0.2*range(y2plot(:,lowFind),'all'))*highlight(lowFind),'-','color',[0.5 0.5 0.5],'LineWidth',2);
+hlowsigcorr = plot(Para.freq(lowFind),(max(y2plot(:,lowFind),[],'all')+0.1*range(y2plot(:,lowFind),'all'))*highlightcorr(lowFind),'-','color',[0 0 0],'LineWidth',2);
+
+yyaxis right
+hhighM = shadedErrorBar(Para.freq(highFind), y2plot(1,highFind),se2plot(1,highFind),{'color',[255 106 106]/255,'linewidth',1,'linestyle','-'},1);
+hhighS = shadedErrorBar(Para.freq(highFind), y2plot(2,highFind), se2plot(2,highFind),{'color',[30 144 255]/255,'linewidth',1,'linestyle','-'},1);
+
+hhighsig = plot(Para.freq(highFind),(max(y2plot(:,highFind),[],'all')+0.2*range(y2plot(:,highFind),'all'))*highlight(highFind),'-','color',[0.5 0.5 0.5],'LineWidth',2);
+hhighsigcorr = plot(Para.freq(highFind),(max(y2plot(:,highFind),[],'all')+0.1*range(y2plot(:,highFind),'all'))*highlightcorr(highFind),'-','color',[0 0 0],'LineWidth',2);
+
 
 title(filename(1:end-4))
 xlabel('Frequency (Hz)')
-ylabel('Power (a.u.)')
 
-legend([hM.mainLine,hS.mainLine,hsig,hsigcorr], ...
+legend([hlowM.mainLine,hlowS.mainLine,hlowsig,hlowsigcorr], ...
     ['Intact'],['Scrambled'],['P<0.05'],['P<0.05 (corrected)'],'box','off');
 
 
@@ -122,10 +133,10 @@ betaPowS = mean(allMetricS(:,betaInd),2);
 gammaPowM = mean(allMetricM(:,gammaInd),2);
 gammaPowS = mean(allMetricS(:,gammaInd),2);
 
-haBeta = axes(hf,'Position',[0.4 0.4 0.2 0.3],...
+haBeta = axes(hf,'Position',[0.5 0.5 0.15 0.25],...
     'Xlim',[0.5 2.5],'XTick', [1,2],'XTickLabel',{'I','S'},'YTick',[],'NextPlot','add');
 ylabel(haBeta,'Beta Power')
-haGamma = axes(hf,'Position',[0.65 0.4 0.2 0.3],...
+haGamma = axes(hf,'Position',[0.7 0.5 0.15 0.25],...
     'Xlim',[0.5 2.5],'XTick', [1,2],'XTickLabel',{'I','S'},'YTick',[],'NextPlot','add');
 ylabel(haGamma,'Gamma Power')
 
@@ -180,17 +191,18 @@ set(haGamma,'LineWidth',1.5)
 % set(haGamma,'Children',[a(2:end);a(1)])
 
 if lmeStatsBeta.pValue < 0.05
-    hsigBeta = plot(haBeta,1.5,max(get(haBeta,'ylim')),'k*','markersize',8);
+    hsigBeta = plot(haBeta,1.5,max(get(haBeta,'ylim')),'k*','markersize',10);
     legend([hsigBeta],['P<0.05'],'box','off');
 end
 if lmeStatsGamma.pValue < 0.05
-    hsigGamma = plot(haGamma,1.5,max(get(haGamma,'ylim')),'k*','markersize',8);
+    hsigGamma = plot(haGamma,1.5,max(get(haGamma,'ylim')),'k*','markersize',10);
     legend([hsigGamma],['P<0.05'],'box','off');
 end
 % save the figure to data location
 saveas(hf,[pathname filename(1:end-4)])
 
 
+% set(gco,'YData',get(gco,'YData')+22.5)
 %% plot Bandpower
 clear;
 [filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/BP/*.mat']);
