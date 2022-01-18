@@ -166,7 +166,7 @@ end
 
 %% plot time frequency Coherence
 
-if contains(pathname,'COHtf') | contains(pathname,'COHtrl') | contains(pathname,'COHviews')
+if contains(pathname,'COHtf') | contains(pathname,'COHtrl')
 
 tMap(tMap==0)=nan;
 pMap(pMap==0)=nan;
