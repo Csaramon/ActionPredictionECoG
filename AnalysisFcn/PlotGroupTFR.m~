@@ -102,20 +102,16 @@ pMap = pMap';
 % tMap(tMap==0)=nan;
 % pMap(pMap==0)=nan;
 % y2plot = yraw./(repmat(mean(yraw,3),1,1,size(yraw,3)));
-freqhigh = [60 90];
-freqlow = [20 30];
-% fhInd = Para.freqhigh >= freqhigh(1) & Para.freqhigh <= freqhigh(2);
-% flInd = Para.freqlow >= freqlow(1) & Para.freqlow <= freqlow(2);
-% 
-% pMap = pMap(fhInd,flInd);
-% cdat = tMap(fhInd,flInd);
-% vdat = Para.freqhigh(fhInd); 
-% hdat = Para.freqlow(flInd); 
-% y2plot = y2plot(:,flInd,fhInd);
+freqhigh = [1 120];
+freqlow = [1 30];
+fhInd = Para.freqhigh >= freqhigh(1) & Para.freqhigh <= freqhigh(2);
+flInd = Para.freqlow >= freqlow(1) & Para.freqlow <= freqlow(2);
 
-cdat = tMap';
-vdat = Para.freqvec_amp;
-hdat = Para.freqvec_ph;
+pMap = pMap(fhInd,flInd);
+cdat = tMap(fhInd,flInd);
+vdat = Para.freqhigh(fhInd); 
+hdat = Para.freqlow(flInd); 
+y2plot = y2plot(:,flInd,fhInd);
 
 clim = [min(cdat(:)) max(cdat(:))];
 

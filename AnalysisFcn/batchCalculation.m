@@ -2,7 +2,7 @@ function varargout = batchCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'BP'
+    calculate = 'PACold'
 end
 
 % initialize base path and toolbox
@@ -427,7 +427,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         if strcmp(calculate,'PeakFrequency')
             % set parameter
             freqRange = [1 128];
-            timeRange = [0 1];
+            timeWin = [0 1];
             timeStep = 0.01;
             
             % make data filefolder
@@ -464,7 +464,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
                 freq         = ft_freqanalysis(cfg,rerefSingle);
                 
                 % select data
-                toi = cfg.toi>=timeRange(1) & cfg.toi<=timeRange(2);
+                toi = cfg.toi>=timeWin(1) & cfg.toi<=timeWin(2);
                 freq_pow = squeeze(freq.powspctrm(:,:,toi));
                 
                 if any(freq_pow(:))
@@ -522,7 +522,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             % calculation parameters
             IVCselect = 0;pIVC=0.05; % Whether to use IVC selection; threshold for IVC
             
-            timeRange = [0 1];
+            timeWin = [0 1];
             
             %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -564,12 +564,12 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             
             % seperate conditions
             cfg = [];
-            cfg.latency = timeRange;
+            cfg.latency = timeWin;
             cfg.trials = find(trlData.trialinfo(:,1)==0);
             trlDataM = ft_selectdata(cfg,trlData);
             
             cfg = [];
-            cfg.latency = timeRange;
+            cfg.latency = timeWin;
             cfg.trials = find(trlData.trialinfo(:,1)==1);
             trlDataS = ft_selectdata(cfg,trlData);
             
@@ -606,7 +606,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             allMetricS = cat(1,allMetricS,metricS);
             
             Para.elecposMNI = [Para.elecposMNI;freqM.elec.elecposMNI(ROIelec,:)];
-            Para.timeRange = timeRange;
+            Para.timeWin = timeWin;
             Para.freq = freqM.freq;
             
             nelec = nelec+numel(ROIelec);
@@ -667,8 +667,8 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             cfg.output       = 'pow';
             cfg.method       = 'mtmconvol';
             cfg.foi          = 32:2:120;
-            cfg.t_ftimwin  = 14./cfg.foi;
-            cfg.tapsmofrq  = 0.3 *cfg.foi; % tapers=2*tw*fw-1
+            cfg.t_ftimwin  = 0.5*ones(size(cfg.foi));%14./cfg.foi;
+            cfg.tapsmofrq  = 8*ones(size(cfg.foi));%0.3 *cfg.foi; % tapers=2*tw*fw-1
             cfg.toi          = min(rerefData.time{1}):0.1:max(rerefData.time{1});
             %                                 cfg.precision = 'single';
             cfg.pad='nextpow2';
@@ -1071,7 +1071,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         %%%%%%%%%%%%%%%%%%%%%%%%
         if strcmp(calculate,'BP')
             
-            timeRange = [-0.5 1];
+            timeWin = [-0.5 1];
             freqRange = [20 30] ; % [20 30] [60 90]
             
             %%%%%%%%%%%%%%% load trl data %%%%%%%%%%%%%%%
@@ -1118,7 +1118,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             %             cfg.method       = 'wavelet';
             %             cfg.foi          = min(freqRange):max(freqRange);
             %             cfg.width        =  7;
-            %             cfg.toi          = min(timeRange):0.01:max(timeRange);
+            %             cfg.toi          = min(timeWin):0.01:max(timeWin);
             %             cfg.precision = 'single';
             %             cfg.keeptrials = 'yes';
             %             cfg.pad='nextpow2';
@@ -1131,7 +1131,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             cfg.foi          = min(freqRange):max(freqRange);
             cfg.t_ftimwin  = 4./cfg.foi;
             cfg.tapsmofrq  = 0.3 *cfg.foi; % tapers=2*tw*fw-1
-            cfg.toi          = 'all';%min(timeRange):0.01:max(timeRange);
+            cfg.toi          = 'all';%min(timeWin):0.01:max(timeWin);
             cfg.keeptrials = 'yes';
             %                                 cfg.precision = 'single';
             cfg.pad='nextpow2';
@@ -1306,7 +1306,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         if strcmp(calculate,'avgpow')
             
             freqRange = [3 8];
-            timeRange = [0 1];
+            timeWin = [0 1];
             %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             datafile = dir([resultPath 'TFR' filesep subname filesep 'FreqData.mat']);
@@ -1315,7 +1315,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             
             % extract frequency points of intrest
             freqPoint = find(freqM.freq>=freqRange(1) & freqM.freq<=freqRange(2));
-            timePoint = find(freqM.time>=timeRange(1) & freqM.time<=timeRange(2));
+            timePoint = find(freqM.time>=timeWin(1) & freqM.time<=timeWin(2));
             % normalise power
             tmpPowerM = abs(freqM.fourierspctrm(:,:,freqPoint,:)).^2;
             tmpPowerS = abs(freqS.fourierspctrm(:,:,freqPoint,:)).^2;
@@ -1329,7 +1329,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             
             [~,pIvS] = ttest2(metricM,metricS);
             
-            Para.time = timeRange;
+            Para.time = timeWin;
             Para.freq = freqRange;
             
             if ~exist([resultPath calculate filesep ROIAtlas{1}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'],'file')
@@ -1347,7 +1347,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         if strcmp(calculate,'PACold')
             
             % calculation parameters
-            timeRange = [0 1];
+            timeWin = [0 1];
             
             %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1363,11 +1363,20 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             [it,~] = find(tempdev <=roiDist);
             ROIelec = unique(it);
             
-            %             cfg = [];
-            %             cfg.demean = 'yes';
-            %             cfg.detrend = 'yes';
-            %
-            %             trlData = ft_preprocessing(cfg,trlData);
+            % skip bad channels
+            badChanInd = trlData.trial{1,1}(ROIelec,1)==0;
+            ROIelec(badChanInd) = [];
+            
+            % skip if no electrode pair
+            if ~any(ROIelec)
+                continue
+            end
+            
+            cfg = [];
+            cfg.demean = 'yes';
+            cfg.detrend = 'yes';
+            
+            trlData = ft_preprocessing(cfg,trlData);
             
             % seperate conditions
             cfg = [];
@@ -1391,7 +1400,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             
             
             % calculate single electrode PAC with shuffle
-            timeInd = timelockM.time>=timeRange(1) & timelockM.time<=timeRange(2);
+            timeInd = timelockM.time>=timeWin(1) & timelockM.time<=timeWin(2);
             allPACM = [];
             allPACS = [];
             Npair = 1;
@@ -1451,7 +1460,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         if strcmp(calculate,'PAC')
             
             % calculation parameters
-            timeRange = [0 1];
+            timeWin = [0 1];
             
             %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1467,69 +1476,89 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             [it,~] = find(tempdev <=roiDist);
             ROIelec = unique(it);
             
-            %             cfg = [];
-            %             cfg.demean = 'yes';
-            %             cfg.detrend = 'yes';
-            %
-            %             trlData = ft_preprocessing(cfg,trlData);
+            % skip bad channels
+            badChanInd = trlData.trial{1,1}(ROIelec,1)==0;
+            ROIelec(badChanInd) = [];
+            
+            % skip if no electrode pair
+            if ~any(ROIelec)
+                continue
+            end
+            
+            cfg = [];
+            cfg.demean = 'yes';
+            cfg.detrend = 'yes';
+            
+            trlData = ft_preprocessing(cfg,trlData);
             
             % seperate conditions
             cfg = [];
+            cfg.latency = timeWin;
             cfg.trials = find(trlData.trialinfo(:,1)==0);
             trlDataM = ft_selectdata(cfg,trlData);
             
             cfg = [];
+            cfg.latency = timeWin;
             cfg.trials = find(trlData.trialinfo(:,1)==1);
             trlDataS = ft_selectdata(cfg,trlData);
             
             
-            cfg = [];
-            cfg.channel = 'all';
+                % calculate Power spectrum
+%             cfg            = [];
+%             cfg.output     = 'fourier';
+%             cfg.method     = 'mtmfft';
+            %             cfg.foilim     = [2 120];
+%             cfg.foi          = 2:1:120; %logspace(log10(2),log10(128),32);
+%                                 cfg.taper      =  'hamming';
+%             cfg.tapsmofrq  = 4;
+%             cfg.keeptrials = 'yes';
+            
+            % hilbert transform
+                        cfg            = [];
+            cfg.output     = 'fourier';
+            cfg.method = 'hilbert';
+            cfg.foi = [25 75];
+            cfg.width = [5 15];
+            cfg.toi = min(trlDataM.time{1}):0.05:max(trlDataM.time{1});
             cfg.keeptrials = 'yes';
-            timelockM = ft_timelockanalysis(cfg,trlDataM);
-            timelockS = ft_timelockanalysis(cfg,trlDataS);
+            cfg.filttype = 'firws';
+            cfg.filtorder = nan;
+            cfg.filtdir = 'onepass-zerophase';
             
+            ft_warning off
+            freqM    = ft_freqanalysis(cfg, trlDataM);
             
-            % calculate single electrode PAC with shuffle
-            timeInd = timelockM.time>=timeRange(1) & timelockM.time<=timeRange(2);
-            allPACM = [];
-            allPACS = [];
-            Npair = 1;
-            for ie = ROIelec'
-                metricM = squeeze(timelockM.trial(:,ie,timeInd));
-                metricS = squeeze(timelockS.trial(:,ie,timeInd));
-                
-                [pacmat, freqvec_ph, freqvec_amp] = find_pac_shf(metricM', trlDataM.fsample, 'cfc');
-                allPACM(Npair,:,:) = pacmat;
-                
-                [pacmat, freqvec_ph, freqvec_amp] = find_pac_shf(metricS', trlDataS.fsample, 'cfc');
-                allPACS(Npair,:,:) = pacmat;
-                
-                % count for pairs of eletrodes
-                Npair = Npair + 1;
-                
-            end
+            freqS    = ft_freqanalysis(cfg, trlDataS);
             
-            
+            % calculate electrode PAC 
+
+            cfg.method = 'coh';
+            cfg.channel = ROIelec;
+            cfg.freqlow = [20 30];
+            cfg.freqhigh = [60 90];
+            cfg.keeptrials = 'no';
+            crossfreqM = ft_crossfrequencyanalysis(cfg, freqM);
+
+            crossfreqS = ft_crossfrequencyanalysis(cfg, freqS);
+          
             % generate index for Subject Electrode and Trial
-            metricM = allPACM;
-            metricS = allPACS;
+            metricM = crossfreqM.crsspctrm;
+            metricS = crossfreqS.crsspctrm;
             
-            elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-2]');
-            subIndexM = cat(1,subIndexM,repmat(isub,Npair-1,1));
+            elecIndexM =  cat(1,elecIndexM,[nelec:nelec+numel(ROIelec)-1]');
+            subIndexM = cat(1,subIndexM,repmat(isub,numel(ROIelec),1));
             
-            
-            elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-2]');
-            subIndexS = cat(1,subIndexS,repmat(isub,Npair-1,1));
+            elecIndexS = cat(1,elecIndexS,[nelec:nelec+numel(ROIelec)-1]');
+            subIndexS = cat(1,subIndexS,repmat(isub,numel(ROIelec),1));
             
             % concontenate all trial responses in chosen ROI
             allMetricM = cat(1,allMetricM,metricM);
             allMetricS = cat(1,allMetricS,metricS);
             
             Para.chanCMB{isub} = ROIelec;
-            Para.freqvec_ph = freqvec_ph;
-            Para.freqvec_amp = freqvec_amp;
-            nelec = nelec+Npair-1;
+            Para.freqhigh = crossfreqM.freqhigh;
+            Para.freqlow = crossfreqM.freqlow;
+            nelec = nelec+numel(ROIelec);
             
         end
         
@@ -1870,7 +1899,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
     
     %% section6: calculate PAC %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if strcmp(calculate,'PAC')
+    if strcmp(calculate,'PAC') | strcmp(calculate,'PACold')
         CondIndexM = ones(size(subIndexM));
         CondIndexS = 2*ones(size(subIndexS));
         
@@ -1913,12 +1942,12 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
                 Ycorr = lmeTBL.Y-Z*randBeta;
                 obsVal1 = Ycorr(lmeTBL.Cond=='1');
                 obsVal2 = Ycorr(lmeTBL.Cond=='2');
-                y2plot(:,ifreq,itime) = [mean(obsVal1);mean(obsVal2)];
-                se2plot(:,ifreq,itime) = [std(obsVal1)./sqrt(numel(obsVal1));std(obsVal2)./sqrt(numel(obsVal2))];
+                y2plot(:,ifreq,itime) = [nanmean(obsVal1);nanmean(obsVal2)];
+                se2plot(:,ifreq,itime) = [nanstd(obsVal1)./sqrt(numel(obsVal1));nanstd(obsVal2)./sqrt(numel(obsVal2))];
                 rawVal1 = lmeTBL.Y(lmeTBL.Cond=='1');
                 rawVal2 = lmeTBL.Y(lmeTBL.Cond=='2');
-                yraw(:,ifreq,itime) = [mean(rawVal1);mean(rawVal2)];
-                seraw(:,ifreq,itime) = [std(rawVal1)./sqrt(numel(rawVal1));std(rawVal2)./sqrt(numel(rawVal2))];
+                yraw(:,ifreq,itime) = [nanmean(rawVal1);nanmean(rawVal2)];
+                seraw(:,ifreq,itime) = [nanstd(rawVal1)./sqrt(numel(rawVal1));nanstd(rawVal2)./sqrt(numel(rawVal2))];
             end
         end
         

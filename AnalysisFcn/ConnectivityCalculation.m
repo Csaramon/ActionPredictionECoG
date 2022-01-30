@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'COHcorr'
+    calculate = 'PSItf'
 end
 
 % initialize base path and toolbox
@@ -46,7 +46,7 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1];
+seedIndex = [1 3];
 searchIndex = [7];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
@@ -54,9 +54,9 @@ for iseed = seedIndex
     for isearch = searchIndex
         
         %                 skip redundant pairs
-        %         if ~ismember([iseed,isearch],allPair,'rows')
-        %             continue
-        %         end
+%                 if ~ismember([iseed,isearch],allPair,'rows')
+%                     continue
+%                 end
         
         if iseed==isearch
             continue
@@ -728,12 +728,6 @@ for iseed = seedIndex
                 searchElec = unique(it);
                 %                 searchElec = intersect(searchElec,respElecInd);
                 
-                cfg = [];
-                cfg.demean = 'yes';
-                cfg.detrend = 'yes';
-                
-                trlData = ft_preprocessing(cfg,trlData);
-                
                 % skip bad channels
                 badChanInd = trlData.trial{1,1}(seedElec,1)==0;
                 seedElec(badChanInd) = [];
@@ -746,6 +740,12 @@ for iseed = seedIndex
                     continue
                 end
                 
+                cfg = [];
+                cfg.demean = 'yes';
+                cfg.detrend = 'yes';
+                
+                trlData = ft_preprocessing(cfg,trlData);
+
                 % seperate conditions
                 cfg = [];
                 cfg.trials = find(trlData.trialinfo(:,1)==0);
@@ -789,13 +789,12 @@ for iseed = seedIndex
                     cfg            = [];
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
-                    %                                         cfg.foilim     = [2 120];
-                    cfg.foi          = 2:1:120;
-                    %                     cfg.taper      =  'hanning';
+                                                            cfg.foilim     = [0 30];
+%                     cfg.foi          = 2:1:30;
+%                                         cfg.taper      =  'hanning';
                     cfg.tapsmofrq  = 6;
+cfg.pad = 1;
                     cfg.keeptrials = 'yes';
-                    cfg.pad='nextpow2';
-                    
                     
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
                     
@@ -1207,7 +1206,7 @@ for iseed = seedIndex
                 
                 p=0.05; % threshold for IVC
                 timeWin = 1; % unit in second
-                timeStep = 0.05; % unit in second
+                timeStep = 0.1; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -1297,9 +1296,9 @@ for iseed = seedIndex
                     cfg            = [];
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
-                    cfg.foilim     = [1 130];
+%                     cfg.foilim     = [1 130];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 5;
+                    cfg.tapsmofrq  = 6;
                     cfg.keeptrials = 'yes';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
                     
@@ -1308,7 +1307,7 @@ for iseed = seedIndex
                     % calculate PSI in Matched Condition
                     cfg            = [];
                     cfg.method     = 'psi';
-                    cfg.bandwidth = 10;
+                    cfg.bandwidth = 4;
                     cfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
                     PSIM             = ft_connectivityanalysis(cfg, freqM);
                     allPSIM(:,:,in) = PSIM.psispctrm;
@@ -1555,8 +1554,8 @@ for iseed = seedIndex
             if strcmp(calculate,'GrangerTF')
                 
                 p=0.05; % threshold for IVC
-                timeWin = 1; % unit in second
-                timeStep = 0.05; % unit in second
+                timeWin = 0.5; % unit in second
+                timeStep = 0.1; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -1646,10 +1645,11 @@ for iseed = seedIndex
                     cfg            = [];
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
-                    cfg.foilim     = [2 120]; % need equidistant frequency bins for granger method
-                    cfg.tapsmofrq  = 6;
+                    %                     cfg.foilim     = [0 250]; % need equidistant frequency bins for granger method
+                    cfg.tapsmofrq  = 4;
+                    %                     cfg.taper      = 'hanning';
                     cfg.keeptrials = 'yes';
-                    cfg.pad='nextpow2';
+                    %                     cfg.pad='nextpow2';
                     ft_warning off
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
                     
@@ -1672,15 +1672,11 @@ for iseed = seedIndex
                     end
                     fromInd = logical(fromInd);
                     toInd = logical(1-fromInd);
-                    allGrangerM(:,:,in) = (grangerM.grangerspctrm(fromInd,:)-grangerM.grangerspctrm(toInd,:))./ ...
-                        (grangerM.grangerspctrm(fromInd,:)+grangerM.grangerspctrm(toInd,:));
+%                     allGrangerM(:,:,in) = (grangerM.grangerspctrm(fromInd,:)-grangerM.grangerspctrm(toInd,:))./ ...
+%                         (grangerM.grangerspctrm(fromInd,:)+grangerM.grangerspctrm(toInd,:));
+                    allGrangerM(:,:,in) = grangerM.grangerspctrm(fromInd,:);
                     
                     % calculate Granger Index in Scambled Condition
-                    grangercfg = [];
-                    grangercfg.method  = 'granger';
-                    grangercfg.granger.conditional = 'no';
-                    grangercfg.granger.sfmethod = 'bivariate';
-                    grangercfg.channelcmb = {trlDataS.label(seedElec) trlDataS.label(searchElec)};
                     grangerS      = ft_connectivityanalysis(grangercfg, freqS);
                     
                     for ilabel = 1:numel(grangerS.labelcmb)
@@ -1692,9 +1688,9 @@ for iseed = seedIndex
                     end
                     fromInd = logical(fromInd);
                     toInd = logical(1-fromInd);
-                    allGrangerS(:,:,in) = (grangerS.grangerspctrm(fromInd,:)-grangerS.grangerspctrm(toInd,:))./ ...
-                        (grangerS.grangerspctrm(fromInd,:)+grangerS.grangerspctrm(toInd,:));
-                    
+%                     allGrangerS(:,:,in) = (grangerS.grangerspctrm(fromInd,:)-grangerS.grangerspctrm(toInd,:))./ ...
+%                         (grangerS.grangerspctrm(fromInd,:)+grangerS.grangerspctrm(toInd,:));
+                    allGrangerS(:,:,in) = grangerS.grangerspctrm(fromInd,:);
                     
                     timePt(in) = itw+0.5*timeWin;
                     in = in+1;
@@ -1943,11 +1939,11 @@ for iseed = seedIndex
             
             %% section5: calculate cross regional PAC %%
             %%%%%%%%%%%%%%%%%%%%%%%%
-            if strcmp(calculate,'PAC')
+            if strcmp(calculate,'PACregion')
                 
                 % calculation parameters
                 pacMethod = 'mvl'; % coh,plv,mlv,mi,pac
-                timeWin = [0 0.5];
+                timeWin = [0 1];
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1970,11 +1966,11 @@ for iseed = seedIndex
                 
                 
                 % additional preprocessing
-                %             cfg = [];
-                %             cfg.demean = 'yes';
-                %             cfg.detrend = 'yes';
-                %
-                %             trlData = ft_preprocessing(cfg,trlData);
+                cfg = [];
+                cfg.demean = 'yes';
+                cfg.detrend = 'yes';
+                
+                trlData = ft_preprocessing(cfg,trlData);
                 
                 % skip bad channels
                 badChanInd = trlData.trial{1,1}(seedElec,1)==0;
@@ -1997,14 +1993,6 @@ for iseed = seedIndex
                         seedElec = setdiff(seedElec,duplicateInd);
                     end
                 end
-                % seperate conditions
-                cfg = [];
-                cfg.trials = find(trlData.trialinfo(:,1)==0);
-                trlDataM = ft_selectdata(cfg,trlData);
-                
-                cfg = [];
-                cfg.trials = find(trlData.trialinfo(:,1)==1);
-                trlDataS = ft_selectdata(cfg,trlData);
                 
                 
                 % calculate single electrode PAC without shuffle
@@ -2012,104 +2000,70 @@ for iseed = seedIndex
                 Npair = 1;
                 allChanCmb = [];
                 
-                foi          = logspace(log10(2),log10(128),32);
-                width        =  logspace(log10(3),log10(10),32); % adjustive cycles
-                
-                %%%%---- calculate PAC in Intact condition ---- %%%%
-                % time-frequency decomposition (wavelet)
-                cfg              = [];
-                cfg.channel = seedElec;
-                cfg.output       = 'fourier';
-                cfg.method       = 'wavelet';
-                cfg.foi          = foi(foi>=1 & foi<=30);
-                cfg.width        =  width(foi>=1 & foi<30);
-                cfg.toi          = min(timeWin):0.002:max(timeWin);%'all';
-                cfg.precision = 'single';
-                
-                ft_warning off
-                freqlow = ft_freqanalysis(cfg,trlDataM);
-                
-                % time-frequency decomposition (wavelet)
-                cfg              = [];
-                cfg.channel = searchElec;
-                cfg.output       = 'fourier';
-                cfg.method       = 'wavelet';
-                cfg.foi          = foi(foi>=30 );
-                cfg.width        =  width(foi>=30);
-                cfg.toi          = min(timeWin):0.002:max(timeWin);%'all';
-                cfg.precision = 'single';
-                
-                ft_warning off
-                freqhigh = ft_freqanalysis(cfg,trlDataM);
+            % seperate conditions
+            cfg = [];
+            cfg.latency = timeWin;
+            cfg.trials = find(trlData.trialinfo(:,1)==0);
+            trlDataM = ft_selectdata(cfg,trlData);
+            
+            cfg = [];
+            cfg.latency = timeWin;
+            cfg.trials = find(trlData.trialinfo(:,1)==1);
+            trlDataS = ft_selectdata(cfg,trlData);
+            
+            
+                % calculate Power spectrum
+            cfg            = [];
+            cfg.output     = 'fourier';
+            cfg.method     = 'mtmfft';
+            %             cfg.foilim     = [2 120];
+            cfg.foi          = 2:1:120; %logspace(log10(2),log10(128),32);
+                                cfg.taper      =  'hanning';
+%             cfg.tapsmofrq  = 4;
+            cfg.keeptrials = 'yes';
+            freqM    = ft_freqanalysis(cfg, trlDataM);
+            
+            freqS    = ft_freqanalysis(cfg, trlDataS);
                 
                 cfg = [];
                 cfg.method = pacMethod;
-                cfg.chanlow = freqlow.label;
-                cfg.chanhigh = freqhigh.label;
+                cfg.chanlow = seedElec;
+                cfg.chanhigh = searchElec;
+                            cfg.freqlow = [2 30];
+            cfg.freqhigh = [31 120];
                 cfg.keeptrials = 'no';
-                crossfreq = ft_crossfrequencyanalysis(cfg, freqlow, freqhigh);
-                allPACM = crossfreq.crsspctrm;
+                crossfreqM = ft_crossfrequencyanalysis(cfg, freqM);
+                allPACM = crossfreqM.crsspctrm;
                 
                 %%%%---- calculate PAC in Scrambled condition ---- %%%%
-                % time-frequency decomposition (wavelet)
-                cfg              = [];
-                cfg.channel = seedElec;
-                cfg.output       = 'fourier';
-                cfg.method       = 'wavelet';
-                cfg.foi          = foi(foi>=1 & foi<=30);
-                cfg.width        =  width(foi>=1 & foi<30);
-                cfg.toi          = min(timeWin):0.002:max(timeWin);%'all';
-                cfg.precision = 'single';
                 
-                ft_warning off
-                freqlow = ft_freqanalysis(cfg,trlDataS);
+                crossfreqS = ft_crossfrequencyanalysis(cfg, freqS);
+                allPACS = crossfreqS.crsspctrm;
                 
-                % time-frequency decomposition (wavelet)
-                cfg              = [];
-                cfg.channel = searchElec;
-                cfg.output       = 'fourier';
-                cfg.method       = 'wavelet';
-                cfg.foi          = foi(foi>=30 );
-                cfg.width        =  width(foi>=30);
-                cfg.toi          = min(timeWin):0.002:max(timeWin);%'all';
-                cfg.precision = 'single';
-                
-                ft_warning off
-                freqhigh = ft_freqanalysis(cfg,trlDataS);
-                
-                cfg = [];
-                cfg.method = pacMethod;
-                cfg.chanlow = freqlow.label;
-                cfg.chanhigh = freqhigh.label;
-                cfg.keeptrials = 'no';
-                crossfreq = ft_crossfrequencyanalysis(cfg, freqlow, freqhigh);
-                allPACS = crossfreq.crsspctrm;
-                
-                allChanCmb = [allChanCmb;crossfreq.labelcmb];
-                Npair = Npair + size(crossfreq.labelcmb,1);
+                Npair = size(crossfreqM.labelcmb,1);
                 
                 
                 % generate index for Subject Electrode and Trial
                 metricM = allPACM;
                 metricS = allPACS;
                 
-                elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-2]');
-                subIndexM = cat(1,subIndexM,repmat(isub,Npair-1,1));
+                elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-1]');
+                subIndexM = cat(1,subIndexM,repmat(isub,Npair,1));
                 
                 
-                elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-2]');
-                subIndexS = cat(1,subIndexS,repmat(isub,Npair-1,1));
+                elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-1]');
+                subIndexS = cat(1,subIndexS,repmat(isub,Npair,1));
                 
                 % concontenate all trial responses in chosen ROI
                 allMetricM = cat(1,allMetricM,metricM);
                 allMetricS = cat(1,allMetricS,metricS);
                 
-                Para.chanCMB{isub} = allChanCmb;
+                Para.chanCMB{isub} = crossfreqM.labelcmb;
                 Para.pacMethod = pacMethod;
                 Para.timeWin = timeWin;
-                Para.freqlow = freqlow.freq;
-                Para.freqhigh = freqhigh.freq;
-                nelec = nelec+Npair-1;
+                Para.freqlow = crossfreqM.freqlow;
+                Para.freqhigh = crossfreqM.freqhigh;
+                nelec = nelec+Npair;
                 
             end
             
@@ -2555,7 +2509,7 @@ for iseed = seedIndex
         
         %% section5: calculate cross regional PAC %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'PAC')
+        if strcmp(calculate,'PACregion')
             CondIndexM = ones(size(subIndexM));
             CondIndexS = 2*ones(size(subIndexS));
             
