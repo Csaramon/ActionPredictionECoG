@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PSItf'
+    calculate = 'PACregion'
 end
 
 % initialize base path and toolbox
@@ -46,8 +46,8 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1 3];
-searchIndex = [7];
+seedIndex = [1 3 7];
+searchIndex = [1 3 7];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
@@ -1942,7 +1942,7 @@ cfg.pad = 1;
             if strcmp(calculate,'PACregion')
                 
                 % calculation parameters
-                pacMethod = 'mvl'; % coh,plv,mlv,mi,pac
+                pacMethod = 'mi'; % coh,plv,mlv,mi,pac
                 timeWin = [0 1];
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
@@ -2002,12 +2002,10 @@ cfg.pad = 1;
                 
             % seperate conditions
             cfg = [];
-            cfg.latency = timeWin;
             cfg.trials = find(trlData.trialinfo(:,1)==0);
             trlDataM = ft_selectdata(cfg,trlData);
             
             cfg = [];
-            cfg.latency = timeWin;
             cfg.trials = find(trlData.trialinfo(:,1)==1);
             trlDataS = ft_selectdata(cfg,trlData);
             
@@ -2015,12 +2013,17 @@ cfg.pad = 1;
                 % calculate Power spectrum
             cfg            = [];
             cfg.output     = 'fourier';
-            cfg.method     = 'mtmfft';
+            cfg.method     = 'mtmconvol';
             %             cfg.foilim     = [2 120];
-            cfg.foi          = 2:1:120; %logspace(log10(2),log10(128),32);
-                                cfg.taper      =  'hanning';
+            cfg.foi          = [2:2:30,35:5:120]; %logspace(log10(2),log10(128),32);
+            cfg.toi = min(timeWin):0.05:max(timeWin);
+            cfg.t_ftimwin = 5*(1./cfg.foi);
+            cfg.t_ftimwin(cfg.t_ftimwin<0.5) = 0.5;
+            cfg.taper      =  'hanning';
 %             cfg.tapsmofrq  = 4;
             cfg.keeptrials = 'yes';
+            
+            ft_warning off
             freqM    = ft_freqanalysis(cfg, trlDataM);
             
             freqS    = ft_freqanalysis(cfg, trlDataS);
@@ -2069,7 +2072,138 @@ cfg.pad = 1;
             
             
             
+             %% section5-2: calculate cross regional PAC (circlar correlation)%%
+            %%%%%%%%%%%%%%%%%%%%%%%%
+            if strcmp(calculate,'cirPACregion')
+                
+                                % calculation parameters
+                timeWin = [0 1];
+                
+                %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                if exist([dataPath subname 'LAR_trlData.mat'],'file')
+                    a = load([dataPath subname 'LAR_trlData']);
+                end
+                c = fieldnames(a);
+                trlData = a.(c{1});
+                
+                % choose seed electrodes according to MNI coordinates
+                elecposMNI = trlData.elec.elecposMNI;
+                tempdev = pdist2(elecposMNI,seed_coordiantes);
+                [it,~] = find(tempdev <=roiDist);
+                seedElec = unique(it);
+                
+                % choose search electrodes according to MNI coordinates
+                tempdev = pdist2(elecposMNI,search_coordiantes);
+                [it,~] = find(tempdev <=roiDist);
+                searchElec = unique(it);
+                
+                
+                % additional preprocessing
+                cfg = [];
+                cfg.demean = 'yes';
+                cfg.detrend = 'yes';
+                
+                trlData = ft_preprocessing(cfg,trlData);
+                
+                % skip bad channels
+                badChanInd = trlData.trial{1,1}(seedElec,1)==0;
+                seedElec(badChanInd) = [];
+                
+                badChanInd = trlData.trial{1,1}(searchElec,1)==0;
+                searchElec(badChanInd) = [];
+                
+                % skip if no electrode pair
+                if ~any(seedElec) | ~any(searchElec) | isempty(setdiff(seedElec,searchElec))
+                    continue
+                end
+                
+                % remove superimposed electrodes
+                duplicateInd = intersect(searchElec,seedElec);
+                if ~isempty(duplicateInd)
+                    if numel(searchElec) > numel(seedElec)
+                        searchElec = setdiff(searchElec,duplicateInd);
+                    else
+                        seedElec = setdiff(seedElec,duplicateInd);
+                    end
+                end
+                
+                
+                % calculate single electrode PAC without shuffle
+                
+                Npair = 1;
+                allChanCmb = [];
+                allPACM = [];
+                allPACS = [];
+            % seperate conditions
+            cfg = [];
+            cfg.trials = find(trlData.trialinfo(:,1)==0);
+            trlDataM = ft_selectdata(cfg,trlData);
             
+            cfg = [];
+            cfg.trials = find(trlData.trialinfo(:,1)==1);
+            trlDataS = ft_selectdata(cfg,trlData);
+            
+            
+                % calculate Power spectrum
+            cfg            = [];
+            cfg.output     = 'fourier';
+            cfg.method     = 'mtmconvol';
+            %             cfg.foilim     = [2 120];
+            cfg.foi          = [2:2:30,35:5:120]; %logspace(log10(2),log10(128),32);
+            cfg.toi = min(timeWin):0.05:max(timeWin);
+            cfg.t_ftimwin = 0.5*ones(size(cfg.foi));
+                                cfg.taper      =  'hanning';
+%             cfg.tapsmofrq  = 4;
+            cfg.keeptrials = 'yes';
+            
+            ft_warning off
+            freqM    = ft_freqanalysis(cfg, trlDataM);
+            
+            freqS    = ft_freqanalysis(cfg, trlDataS);
+                
+            
+            for iseedElec = seedElec'
+                for isearchElec = searchElec'
+                    allChanCmb = [allChanCmb;[iseedElec isearchElec]];
+                    [pacmat, ~] = find_pac (freqM, freqM, [iseedElec,isearchElec]);
+                    allPACM(Npair,:,:) = pacmat;
+                    
+                    %%%%---- calculate PAC in Scrambled condition ---- %%%%
+                    
+                    [pacmat, ~] = find_pac (freqS, freqS, [iseedElec,isearchElec]);
+                    allPACS(Npair,:,:) = pacmat;
+                    
+                    Npair = Npair +1;
+                    
+                end
+            end
+                
+                
+                % generate index for Subject Electrode and Trial
+                metricM = allPACM;
+                metricS = allPACS;
+                
+                elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-2]');
+                subIndexM = cat(1,subIndexM,repmat(isub,Npair-1,1));
+                
+                
+                elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-2]');
+                subIndexS = cat(1,subIndexS,repmat(isub,Npair-1,1));
+                
+                % concontenate all trial responses in chosen ROI
+                allMetricM = cat(1,allMetricM,metricM);
+                allMetricS = cat(1,allMetricS,metricS);
+                
+                Para.chanCMB{isub} = allChanCmb;
+                Para.timeWin = timeWin;
+                Para.freqlow = freqM.freq(freqM.freq<=30);
+                Para.freqhigh = freqM.freq(freqM.freq>30);
+                nelec = nelec+Npair-1;
+                
+            end
+            
+                       
         end
         
         
@@ -2509,7 +2643,7 @@ cfg.pad = 1;
         
         %% section5: calculate cross regional PAC %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'PACregion')
+        if strcmp(calculate,'PACregion') | strcmp(calculate,'cirPACregion')
             CondIndexM = ones(size(subIndexM));
             CondIndexS = 2*ones(size(subIndexS));
             

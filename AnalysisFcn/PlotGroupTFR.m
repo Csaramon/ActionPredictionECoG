@@ -99,23 +99,22 @@ if contains(pathname,'PAC')
 
 tMap = tMap';
 pMap = pMap';
-% tMap(tMap==0)=nan;
-% pMap(pMap==0)=nan;
-% y2plot = yraw./(repmat(mean(yraw,3),1,1,size(yraw,3)));
-freqhigh = [60 90];
-freqlow = [20 30];
-% fhInd = Para.freqhigh >= freqhigh(1) & Para.freqhigh <= freqhigh(2);
-% flInd = Para.freqlow >= freqlow(1) & Para.freqlow <= freqlow(2);
-% 
-% pMap = pMap(fhInd,flInd);
-% cdat = tMap(fhInd,flInd);
-% vdat = Para.freqhigh(fhInd); 
-% hdat = Para.freqlow(flInd); 
-% y2plot = y2plot(:,flInd,fhInd);
 
-cdat = tMap';
-vdat = Para.freqvec_amp;
-hdat = Para.freqvec_ph;
+freqhigh = [30 150];
+freqlow = [1 40];
+fhInd = Para.freqhigh >= freqhigh(1) & Para.freqhigh <= freqhigh(2);
+flInd = Para.freqlow >= freqlow(1) & Para.freqlow <= freqlow(2);
+
+pMap = pMap(fhInd,flInd);
+cdat = tMap(fhInd,flInd);
+vdat = Para.freqhigh(fhInd); 
+hdat = Para.freqlow(flInd); 
+% y2plot = permute(y2plot,[1 3 2]);
+y2plot = y2plot(:,flInd,fhInd);
+
+% cdat = tMap';
+% vdat = Para.freqvec_amp;
+% hdat = Para.freqvec_ph;
 
 clim = [min(cdat(:)) max(cdat(:))];
 
@@ -126,7 +125,7 @@ clim = [min(cdat(:)) max(cdat(:))];
 % highlight = pMap< 0.05/numel(pMap); 
 
 % FDR  correction
-[p_fdr, p_masked] = fdr(pMap, 0.05,'nonParametric');
+[p_fdr, p_masked] = fdr(pMap, 0.05,'Parametric');
 highlight = p_masked;
 
 % the significant voxels could be outlined with a black contour
