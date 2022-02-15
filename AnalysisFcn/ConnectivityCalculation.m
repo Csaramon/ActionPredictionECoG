@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PACregion'
+    calculate = 'GrangerTF'
 end
 
 % initialize base path and toolbox
@@ -704,7 +704,7 @@ for iseed = seedIndex
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'LAR_trlData.mat']);
+                datafile = dir([dataPath subname 'LARER_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
@@ -789,11 +789,10 @@ for iseed = seedIndex
                     cfg            = [];
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
-                                                            cfg.foilim     = [0 30];
+%                                                             cfg.foilim     = [0 30];
 %                     cfg.foi          = 2:1:30;
 %                                         cfg.taper      =  'hanning';
                     cfg.tapsmofrq  = 6;
-cfg.pad = 1;
                     cfg.keeptrials = 'yes';
                     
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
@@ -1211,7 +1210,7 @@ cfg.pad = 1;
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'LAR_trlData.mat']);
+                datafile = dir([dataPath subname 'LARER_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
@@ -1298,7 +1297,7 @@ cfg.pad = 1;
                     cfg.method     = 'mtmfft';
 %                     cfg.foilim     = [1 130];
                     % cfg.foi          = logspace(log10(2),log10(128),32);
-                    cfg.tapsmofrq  = 6;
+                    cfg.tapsmofrq  = 4;
                     cfg.keeptrials = 'yes';
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
                     
@@ -1554,13 +1553,13 @@ cfg.pad = 1;
             if strcmp(calculate,'GrangerTF')
                 
                 p=0.05; % threshold for IVC
-                timeWin = 0.5; % unit in second
+                timeWin = 1; % unit in second
                 timeStep = 0.1; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'LAR_trlData.mat']);
+                datafile = dir([dataPath subname 'LARER_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
@@ -1646,7 +1645,7 @@ cfg.pad = 1;
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
                     %                     cfg.foilim     = [0 250]; % need equidistant frequency bins for granger method
-                    cfg.tapsmofrq  = 4;
+                    cfg.tapsmofrq  = 6;
                     %                     cfg.taper      = 'hanning';
                     cfg.keeptrials = 'yes';
                     %                     cfg.pad='nextpow2';
@@ -1964,15 +1963,7 @@ cfg.pad = 1;
                 [it,~] = find(tempdev <=roiDist);
                 searchElec = unique(it);
                 
-                
-                % additional preprocessing
-                cfg = [];
-                cfg.demean = 'yes';
-                cfg.detrend = 'yes';
-                
-                trlData = ft_preprocessing(cfg,trlData);
-                
-                % skip bad channels
+                                % skip bad channels
                 badChanInd = trlData.trial{1,1}(seedElec,1)==0;
                 seedElec(badChanInd) = [];
                 
@@ -1983,6 +1974,14 @@ cfg.pad = 1;
                 if ~any(seedElec) | ~any(searchElec) | isempty(setdiff(seedElec,searchElec))
                     continue
                 end
+                
+                % additional preprocessing
+                cfg = [];
+                cfg.demean = 'yes';
+                cfg.detrend = 'yes';
+                
+                trlData = ft_preprocessing(cfg,trlData);
+                
                 
                 % remove superimposed electrodes
                 duplicateInd = intersect(searchElec,seedElec);

@@ -16,7 +16,7 @@ dataPath = '/Users/qinchaoyi/Desktop/ActionPrediction/';
 
 rerefMethod = 'LAR';
 
-patientID = 'Patient13';  % 1,2,3,4,6,8,9,11,12,13
+patientID = 'Patient1';  % 1,2,3,4,6,8,9,11,12,13
 mkdir([dataPath patientID],'Analysis');
 
 % specify paths for recording data and stimuli info
@@ -528,8 +528,7 @@ end
 cfg.updatesens = 'yes';
 rerefData = ft_preprocessing(cfg, ftData);
 
-uisave('rerefData',['C:\Users\qin2\Documents\ActionPredictionECoG\Data\' filesep patientID rerefMethod 'ER_rerefData.mat']);
-uisave('rerefData',[resultDir filesep patientID rerefMethod 'ER_rerefData.mat']);
+uisave('rerefData',[resultDir filesep patientID rerefMethod '_rerefData.mat']);
 
 
 %% Seperate Trials
@@ -575,5 +574,5 @@ cfg.resamplefs = 500;
 cfg.detrend         = 'no';
 [trlData] = ft_resampledata(cfg, trlData);
 
-uisave('trlData',['C:\Users\qin2\Documents\ActionPredictionECoG\Data\' filesep patientID rerefMethod 'ER_trlData.mat']);
+% uisave('trlData',[resultDir filesep patientID rerefMethod '_trlData.mat']);
 
