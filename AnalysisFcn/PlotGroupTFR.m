@@ -156,21 +156,26 @@ hold on
 contour(x+dx/2,y+dy/2,contourlines,1,'EdgeColor',[238 92 66]/255,'LineWidth',2);
 
 % plotting parameters
-% caxis([-4 4])
-title([filename(1:end-4) ' (Nsub=' num2str(numel(unique(lmeTBL.Sub))) ' Nelec=' num2str(numel(unique(lmeTBL.Elec))) ')'])
 ti = find(filename=='_');
-xlabel([filename(1:ti-1) ' Phase (Hz)'])
-ylabel([filename(ti:end) ' Amplitude (Hz)'])
+ch = colorbar('peer',gca,'EastOutside');
+set(ch,'position',[0.92 0.12 0.03 0.8],'ticks',[],'fontsize',12, ...
+    'ticklabels',{})
+set(ch.Label,'string',['Scrambled>Intact      PAC      Intact>Scrambled'],...
+    'position',[0.9 0],'fontsize',12);
 xlim([4 30])
 
 subplot(1,3,1)
 hM = pcolor(hdat,vdat,squeeze(y2plot(1,:,:))');shading interp
 ca = get(gca,'CLim');
 xlim([4 30])
+ylabel([filename(ti+1:end-4) ' Amplitude (Hz)'])
 subplot(1,3,2)
 hS = pcolor(hdat,vdat,squeeze(y2plot(2,:,:))');shading interp
 caxis(ca)
 xlim([4 30])
+xlabel([filename(1:ti-1) ' Phase (Hz)'])
+
+suptitle([filename(1:end-4) ' (Nsub=' num2str(numel(unique(lmeTBL.Sub))) ' Nelec=' num2str(numel(unique(lmeTBL.Elec))) ')'])
 
 end
 
