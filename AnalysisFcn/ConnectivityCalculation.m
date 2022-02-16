@@ -2163,33 +2163,36 @@ for iseed = seedIndex
                 trlDataS = ft_selectdata(cfg,trlData);
                 
                 
+               %%%%---- calculate PAC in Intact condition ---- %%%%
                 % calculate Power spectrum
                 cfg            = [];
                 cfg.output     = 'fourier';
-                cfg.method     = 'mtmconvol';
-                %             cfg.foilim     = [2 120];
-                cfg.foi          = [2:2:30,35:5:120]; %logspace(log10(2),log10(128),32);
-                cfg.toi = min(timeWin):0.05:max(timeWin);
-                cfg.t_ftimwin = 0.5*ones(size(cfg.foi));
-                cfg.taper      =  'hanning';
-                %             cfg.tapsmofrq  = 4;
+                cfg.method     = 'wavelet';
+                cfg.channel = seedElec;
+                cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
+                cfg.toi = min(timeWin):0.002:max(timeWin);
+                cfg.width = 5;
                 cfg.keeptrials = 'yes';
                 
                 ft_warning off
-                freqM    = ft_freqanalysis(cfg, trlDataM);
+                freqLowM    = ft_freqanalysis(cfg, trlDataM);
+                freqLowS    = ft_freqanalysis(cfg, trlDataS);
                 
-                freqS    = ft_freqanalysis(cfg, trlDataS);
+                cfg.channel = searchElec;
+                cfg.foi          = [35:5:120];
+                freqHighM    = ft_freqanalysis(cfg, trlDataM);
+                freqHighS    = ft_freqanalysis(cfg, trlDataS);
                 
                 
-                for iseedElec = seedElec'
-                    for isearchElec = searchElec'
+                for iseedElec = 1:numel(seedElec)
+                    for isearchElec =  1:numel(searchElec)
                         allChanCmb = [allChanCmb;[iseedElec isearchElec]];
-                        [pacmat, ~] = find_pac (freqM, freqM, [iseedElec,isearchElec]);
+                        [pacmat, ~] = find_pac(freqHighM, freqLowM, [iseedElec,isearchElec]);
                         allPACM(Npair,:,:) = pacmat;
                         
                         %%%%---- calculate PAC in Scrambled condition ---- %%%%
                         
-                        [pacmat, ~] = find_pac (freqS, freqS, [iseedElec,isearchElec]);
+                        [pacmat, ~] = find_pac(freqHighS, freqLowS, [iseedElec,isearchElec]);
                         allPACS(Npair,:,:) = pacmat;
                         
                         Npair = Npair +1;
