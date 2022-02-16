@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'GrangerTF'
+    calculate = 'PACregion'
 end
 
 % initialize base path and toolbox
@@ -46,8 +46,8 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1 3 7];
-searchIndex = [1 3 7];
+seedIndex = [1 7];
+searchIndex = [1 7];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
@@ -704,7 +704,7 @@ for iseed = seedIndex
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'LAR_trlData.mat']);
+                datafile = dir([dataPath subname 'LARER_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
@@ -789,11 +789,10 @@ for iseed = seedIndex
                     cfg            = [];
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
-                                                            cfg.foilim     = [0 30];
+%                                                             cfg.foilim     = [0 30];
 %                     cfg.foi          = 2:1:30;
 %                                         cfg.taper      =  'hanning';
                     cfg.tapsmofrq  = 6;
-cfg.pad = 1;
                     cfg.keeptrials = 'yes';
                     
                     freqM    = ft_freqanalysis(cfg, trlDataMtmp);
@@ -1211,7 +1210,7 @@ cfg.pad = 1;
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'LAR_trlData.mat']);
+                datafile = dir([dataPath subname 'LARER_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
@@ -1646,7 +1645,7 @@ cfg.pad = 1;
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
                     %                     cfg.foilim     = [0 250]; % need equidistant frequency bins for granger method
-                    cfg.tapsmofrq  = 4;
+                    cfg.tapsmofrq  = 6;
                     %                     cfg.taper      = 'hanning';
                     cfg.keeptrials = 'yes';
                     %                     cfg.pad='nextpow2';
@@ -1942,13 +1941,13 @@ cfg.pad = 1;
             if strcmp(calculate,'PACregion')
                 
                 % calculation parameters
-                pacMethod = 'mi'; % coh,plv,mlv,mi,pac
+                pacMethod = 'mvl'; % coh,plv,mlv,mi,pac
                 timeWin = [0 1];
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if exist([dataPath subname 'LAR_trlData.mat'],'file')
-                    a = load([dataPath subname 'LAR_trlData']);
+                if exist([dataPath subname 'LARER_trlData.mat'],'file')
+                    a = load([dataPath subname 'LARER_trlData']);
                 end
                 c = fieldnames(a);
                 trlData = a.(c{1});
@@ -2009,41 +2008,66 @@ cfg.pad = 1;
             cfg.trials = find(trlData.trialinfo(:,1)==1);
             trlDataS = ft_selectdata(cfg,trlData);
             
-            
+            %%%%---- calculate PAC in Intact condition ---- %%%%
                 % calculate Power spectrum
             cfg            = [];
             cfg.output     = 'fourier';
-            cfg.method     = 'mtmconvol';
-            %             cfg.foilim     = [2 120];
-            cfg.foi          = [2:2:30,35:5:120]; %logspace(log10(2),log10(128),32);
-            cfg.toi = min(timeWin):0.05:max(timeWin);
-            cfg.t_ftimwin = 5*(1./cfg.foi);
-            cfg.t_ftimwin(cfg.t_ftimwin<0.5) = 0.5;
-            cfg.taper      =  'hanning';
-%             cfg.tapsmofrq  = 4;
+            cfg.method     = 'wavelet';
+            cfg.channel = seedElec;
+            cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
+            cfg.toi = min(timeWin):0.002:max(timeWin);
+            cfg.width = 5;
             cfg.keeptrials = 'yes';
             
             ft_warning off
-            freqM    = ft_freqanalysis(cfg, trlDataM);
+            freqLow    = ft_freqanalysis(cfg, trlDataM);
             
-            freqS    = ft_freqanalysis(cfg, trlDataS);
-                
-                cfg = [];
+            cfg.channel = searchElec;
+            cfg.foi          = [35:5:120];
+            freqHigh    = ft_freqanalysis(cfg, trlDataM);
+            
+            % calcualte PAC
+                            cfg = [];
                 cfg.method = pacMethod;
-                cfg.chanlow = seedElec;
-                cfg.chanhigh = searchElec;
+                cfg.chanlow = freqLow.label;
+                cfg.chanhigh = freqHigh.label;
                             cfg.freqlow = [2 30];
             cfg.freqhigh = [31 120];
                 cfg.keeptrials = 'no';
-                crossfreqM = ft_crossfrequencyanalysis(cfg, freqM);
+                crossfreqM = ft_crossfrequencyanalysis(cfg, freqLow,freqHigh);
                 allPACM = crossfreqM.crsspctrm;
+
                 
                 %%%%---- calculate PAC in Scrambled condition ---- %%%%
-                
-                crossfreqS = ft_crossfrequencyanalysis(cfg, freqS);
-                allPACS = crossfreqS.crsspctrm;
-                
-                Npair = size(crossfreqM.labelcmb,1);
+                                % calculate Power spectrum
+            cfg            = [];
+            cfg.output     = 'fourier';
+            cfg.method     = 'wavelet';
+            cfg.channel = seedElec;
+            cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
+            cfg.toi = min(timeWin):0.002:max(timeWin);
+            cfg.width = 5;
+            cfg.keeptrials = 'yes';
+            
+            ft_warning off
+            freqLow    = ft_freqanalysis(cfg, trlDataS);
+            
+            cfg.channel = searchElec;
+            cfg.foi          = [35:5:120];
+            freqHigh    = ft_freqanalysis(cfg, trlDataS);
+            
+            % calcualte PAC
+            cfg = [];
+            cfg.method = pacMethod;
+            cfg.chanlow = freqLow.label;
+            cfg.chanhigh = freqHigh.label;
+            cfg.freqlow = [2 30];
+            cfg.freqhigh = [31 120];
+            cfg.keeptrials = 'no';
+            crossfreqS = ft_crossfrequencyanalysis(cfg, freqLow,freqHigh);
+            allPACS = crossfreqS.crsspctrm;
+            
+            Npair = size(crossfreqM.labelcmb,1);
                 
                 
                 % generate index for Subject Electrode and Trial
@@ -2081,8 +2105,8 @@ cfg.pad = 1;
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if exist([dataPath subname 'LAR_trlData.mat'],'file')
-                    a = load([dataPath subname 'LAR_trlData']);
+                if exist([dataPath subname 'LARER_trlData.mat'],'file')
+                    a = load([dataPath subname 'LARER_trlData']);
                 end
                 c = fieldnames(a);
                 trlData = a.(c{1});

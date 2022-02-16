@@ -7,7 +7,7 @@
 % MetricS = squeeze(mean(allMetricS(:,foi,:),2));
 % x2plot = Para.timePT;
 
-toi = Para.timePT > 0.45 & Para.timePT < 0.55;
+toi = Para.timePT > 0 & Para.timePT < 0.5;
 MetricM = squeeze(nanmean(allMetricM(:,:,toi),3));
 MetricS = squeeze(nanmean(allMetricS(:,:,toi),3));
 x2plot = Para.freq;
@@ -67,7 +67,7 @@ end
 y2plot = yraw;
 se2plot = seraw;
 
-x2plot = x2plot(2:end);
+x2plot = x2plot;
 
 % FDR  correction
 if numel(x2plot) == numel(Para.timePT)
