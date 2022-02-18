@@ -46,8 +46,8 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1 7];
-searchIndex = [1 7];
+seedIndex = [1 3 7];
+searchIndex = [1 3 7];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
@@ -58,7 +58,7 @@ for iseed = seedIndex
         %                     continue
         %                 end
         
-        if iseed==isearch
+        if iseed==isearch | (iseed==1&isearch==3) | (iseed==3&isearch==1)
             continue
         end
         
@@ -1941,7 +1941,7 @@ for iseed = seedIndex
             if strcmp(calculate,'PACregion')
                 
                 % calculation parameters
-                pacMethod = 'mvl'; % coh,plv,mlv,mi,pac
+                pacMethod = 'coh'; % coh,plv,mlv,mi,pac
                 timeWin = [0 1];
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
@@ -2010,7 +2010,7 @@ for iseed = seedIndex
                 cfg.channel = seedElec;
                 cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
                 cfg.toi = min(timeWin):0.002:max(timeWin);
-                cfg.width = 5;
+                cfg.width = 7;
                 cfg.keeptrials = 'yes';
                 
                 ft_warning off
