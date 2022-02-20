@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PACregion'
+    calculate = 'GrangerTF'
 end
 
 % initialize base path and toolbox
@@ -1559,7 +1559,7 @@ for iseed = seedIndex
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'LARER_trlData.mat']);
+                datafile = dir([dataPath subname 'Bipolar_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
@@ -1645,7 +1645,7 @@ for iseed = seedIndex
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
                     %                     cfg.foilim     = [0 250]; % need equidistant frequency bins for granger method
-                    cfg.tapsmofrq  = 6;
+                    cfg.tapsmofrq  = 4;
                     %                     cfg.taper      = 'hanning';
                     cfg.keeptrials = 'yes';
                     %                     cfg.pad='nextpow2';

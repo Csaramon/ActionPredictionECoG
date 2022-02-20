@@ -16,7 +16,7 @@ dataPath = '/Users/qinchaoyi/Desktop/ActionPrediction/';
 
 rerefMethod = 'Bipolar';
 
-patientID = 'Patient13';  % 1,2,3,4,6,8,9,11,12,13
+patientID = 'Patient3';  % 1,2,3,4,6,8,9,11,12,13
 mkdir([dataPath patientID],'Analysis');
 
 % specify paths for recording data and stimuli info
