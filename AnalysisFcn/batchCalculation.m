@@ -2,7 +2,7 @@ function varargout = batchCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'PAC'
+    calculate = 'PSDmovie'
 end
 
 % initialize base path and toolbox
@@ -619,8 +619,8 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             
             %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if exist([dataPath subname 'LARER_rerefData.mat'],'file')
-                a = load([dataPath subname 'LARER_rerefData']);
+            if exist([dataPath subname 'Bipolar_rerefData.mat'],'file')
+                a = load([dataPath subname 'Bipolar_rerefData']);
             end
             c = fieldnames(a);
             rerefData = a.(c{1});

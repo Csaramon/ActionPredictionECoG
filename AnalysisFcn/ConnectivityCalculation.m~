@@ -1939,7 +1939,7 @@ for iseed = seedIndex
             if strcmp(calculate,'PACregion')
                 
                 % calculation parameters
-                pacMethod = 'mvl'; % coh,plv,mlv,mi,pac
+                pacMethod = 'coh'; % coh,plv,mlv,mi,pac
                 timeWin = [0 1];
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
@@ -2001,35 +2001,21 @@ for iseed = seedIndex
                 trlDataS = ft_selectdata(cfg,trlData);
                 
                 %%%%---- calculate PAC in Intact condition ---- %%%%
-                % calculate fourier spectrum using wavelet
-%                 cfg            = [];
-%                 cfg.output     = 'fourier';
-%                 cfg.method     = 'wavelet';
-%                 cfg.channel = seedElec;
-%                 cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
-%                 cfg.toi = min(timeWin):0.002:max(timeWin);
-%                 cfg.width = 7;
-%                 cfg.keeptrials = 'yes';
-                
-                % calculate fourier spectrum using hilbert
-                cfg              = [];
-                cfg.output       = 'fourier';
-                cfg.method       = 'hilbert';
+                % calculate Power spectrum
+                cfg            = [];
+                cfg.output     = 'fourier';
+                cfg.method     = 'wavelet';
                 cfg.channel = seedElec;
-                cfg.foi          = [2:2:30];
-                cfg.width        =  0.2.*cfg.foi;
+                cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
                 cfg.toi = min(timeWin):0.002:max(timeWin);
-                cfg.filttype = 'firws';
-                cfg.filtorder = nan;
-                cfg.filtdir = 'onepass-zerophase';
-                cfg.keeptrials   = 'yes';
+                cfg.width = 7;
+                cfg.keeptrials = 'yes';
                 
                 ft_warning off
                 freqLow    = ft_freqanalysis(cfg, trlDataM);
                 
                 cfg.channel = searchElec;
                 cfg.foi          = [35:5:120];
-                cfg.width        =  0.2.*cfg.foi;
                 freqHigh    = ft_freqanalysis(cfg, trlDataM);
                 
                 % calcualte PAC
@@ -2045,24 +2031,21 @@ for iseed = seedIndex
                 
                 
                 %%%%---- calculate PAC in Scrambled condition ---- %%%%
-                cfg              = [];
-                cfg.output       = 'fourier';
-                cfg.method       = 'hilbert';
+                % calculate Power spectrum
+                cfg            = [];
+                cfg.output     = 'fourier';
+                cfg.method     = 'wavelet';
                 cfg.channel = seedElec;
-                cfg.foi          = [2:2:30];
-                cfg.width        =  0.2.*cfg.foi;
+                cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
                 cfg.toi = min(timeWin):0.002:max(timeWin);
-                cfg.filttype = 'firws';
-                cfg.filtorder = nan;
-                cfg.filtdir = 'onepass-zerophase';
-                cfg.keeptrials   = 'yes';
+                cfg.width = 5;
+                cfg.keeptrials = 'yes';
                 
                 ft_warning off
                 freqLow    = ft_freqanalysis(cfg, trlDataS);
                 
                 cfg.channel = searchElec;
                 cfg.foi          = [35:5:120];
-                cfg.width        =  0.2.*cfg.foi;
                 freqHigh    = ft_freqanalysis(cfg, trlDataS);
                 
                 % calcualte PAC
@@ -2104,7 +2087,7 @@ for iseed = seedIndex
             end
             
             
-                        
+            
             %% section5-2: calculate cross regional PAC (circlar correlation)%%
             %%%%%%%%%%%%%%%%%%%%%%%%
             if strcmp(calculate,'cirPACregion')
