@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'COHtf'
+    calculate = 'COH'
 end
 
 % initialize base path and toolbox
@@ -49,14 +49,14 @@ roiDist = 1; % maximum distance between electrodes and ROI voxels
 seedIndex = [1 3 7];
 searchIndex = [1 3 7];
 icontrol = [7];
-allPair = nchoosek(seedIndex,2);
+% allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
     for isearch = searchIndex
         
         %                 skip redundant pairs
-                        if ~ismember([iseed,isearch],allPair,'rows')
-                            continue
-                        end
+        %                         if ~ismember([iseed,isearch],allPair,'rows')
+        %                             continue
+        %                         end
         
         if iseed==isearch | (iseed==1&isearch==3) | (iseed==3&isearch==1)
             continue
@@ -406,10 +406,13 @@ for iseed = seedIndex
                 
                 p=0.05; % threshold for IVC
                 timeWin = [0 1]; % unit in second
+                shuffleTime = 500;
+                threshP = 0.95;
+                freqOI = [20 30];
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'LAR_trlData.mat']);
+                datafile = dir([dataPath subname 'LARER_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
@@ -462,9 +465,13 @@ for iseed = seedIndex
                 cfg.trials = find(trlData.trialinfo(:,1)==1);
                 trlDataS = ft_selectdata(cfg,trlData);
                 
-                 clear trlData
-                 
-                 % remove duplicate electrode
+                clear trlData
+                
+                if ~exist([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)],'file')
+                    mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)])
+                end
+                
+                % remove duplicate electrode
                 Npair = 1;
                 allChanCmb = [];
                 duplicateInd = intersect(searchElec,seedElec);
@@ -480,21 +487,14 @@ for iseed = seedIndex
                 cfg            = [];
                 cfg.output     = 'fourier';
                 cfg.method     = 'mtmfft';
-%                 cfg.foilim     = [2 120];
-                % cfg.foi          = logspace(log10(2),log10(128),32);
-                cfg.tapsmofrq  = 5;
+                cfg.channel = [seedElec;searchElec];
+                %                 cfg.foilim     = [2 120];
+                cfg.tapsmofrq  = 6;
                 cfg.keeptrials = 'yes';
                 freqM    = ft_freqanalysis(cfg, trlDataM);
                 
-                cfg            = [];
-                cfg.output     = 'fourier';
-                cfg.method     = 'mtmfft';
-%                 cfg.foilim     = [2 120];
-                % cfg.foi          = logspace(log10(2),log10(128),32);
-                cfg.tapsmofrq  = 5;
-                cfg.keeptrials = 'yes';
                 freqS    = ft_freqanalysis(cfg, trlDataS);
-
+                
                 
                 % calculate COH in Intact Condition
                 cfg            = [];
@@ -508,11 +508,67 @@ for iseed = seedIndex
                 
                 allChanCmb = [allChanCmb;COHM.labelcmb];
                 
+                % permutation
+                strlen = 0;
+                fprintf(newline)
+                shfCOHM = zeros([size(COHM.cohspctrm),shuffleTime]);
+                shfCOHS = zeros([size(COHS.cohspctrm),shuffleTime]);
+                for ishf = 1:shuffleTime
+                    % display permutation progress
+                    s = ['Permutation progress :' num2str(round(100*ishf/shuffleTime)) '%'];
+                    strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
+                    strlen = strlentmp - strlen;
+                    
+                    shftrlDataM = trlDataM;
+                    shftrlDataS = trlDataS;
+                    % shuffle trial data
+                    for itrl = 1:numel(trlDataM.trial)
+                        shfInd = randi([round(0.1*size(trlDataM.trial{1},2)),round(0.9*size(trlDataM.trial{1},2))]);
+                        shftrlDataM.trial{itrl}(seedElec,:) = [trlDataM.trial{itrl}(seedElec,shfInd+1:end),trlDataM.trial{itrl}(seedElec,1:shfInd)];
+                    end
+                    for itrl = 1:numel(trlDataS.trial)
+                        shfInd = randi([round(0.1*size(trlDataS.trial{1},2)),round(0.9*size(trlDataS.trial{1},2))]);
+                        shftrlDataS.trial{itrl}(seedElec,:) = [trlDataS.trial{itrl}(seedElec,shfInd+1:end),trlDataS.trial{itrl}(seedElec,1:shfInd)];
+                    end
+                    % calculate fourier spectrum
+                    ft_info off
+                    cfg            = [];
+                    cfg.output     = 'fourier';
+                    cfg.method     = 'mtmfft';
+                    cfg.channel = [seedElec;searchElec];
+                    cfg.tapsmofrq  = 6;
+                    cfg.keeptrials = 'yes';
+                    freqM    = ft_freqanalysis(cfg, shftrlDataM);
+                    
+                    freqS    = ft_freqanalysis(cfg, shftrlDataS);
+                    
+                    % calculate COH in Intact Condition
+                    cfg            = [];
+                    cfg.method     = 'coh';
+                    cfg.complex = 'absimag';
+                    cfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
+                    COH             = ft_connectivityanalysis(cfg, freqM);
+                    shfCOHM(:,:,ishf) = COH.cohspctrm;
+                    % calculate COH in Scambled Condition
+                    cfg.channelcmb = {trlDataS.label(seedElec) trlDataS.label(searchElec)};
+                    COH             = ft_connectivityanalysis(cfg, freqS);
+                    shfCOHS(:,:,ishf) = COH.cohspctrm;
+                    
+                end
                 
                 % count for pairs of eletrodes
                 Npair = Npair + size(COHM.labelcmb,1);
                 
+                shfCOHMsort = sort(shfCOHM,3);
+                shfCOHSsort = sort(shfCOHS,3);
+                COHMthresh = shfCOHMsort(:,:,round(threshP*shuffleTime));
+                COHSthresh = shfCOHSsort(:,:,round(threshP*shuffleTime));
                 
+                freqInd = COHM.freq>min(freqOI) & COHM.freq<max(freqOI);
+                sigMat = COHM.cohspctrm>COHMthresh | COHS.cohspctrm>COHSthresh;
+                sigPair = COHM.labelcmb(sum(freqInd.*sigMat,2)>0,:);
+                save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) filesep ...
+                    subname 'SigPair.mat'],'sigPair');
                 
                 % generate index for Subject Electrode and Trial
                 metricM = COHM.cohspctrm;
@@ -1557,11 +1613,15 @@ for iseed = seedIndex
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'Bipolar_trlData.mat']);
+                datafile = dir([dataPath subname 'LARER_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
                     load([dataPath subname 'IVC']);
+                end
+                % load electrode pairs with significant coherence
+                if exist([resultPath 'COH' filesep ROIAtlas{iseed}(1:end-4) filesep subname 'SigPair.mat'],'file')
+                    load([resultPath 'COH' filesep ROIAtlas{iseed}(1:end-4) filesep subname 'SigPair.mat']);
                 end
                 
                 respElecInd = find(IVC.Intact.theta(:,2)<p | IVC.Intact.alpha(:,2)<p | IVC.Intact.beta(:,2)<p | ...
@@ -1657,7 +1717,8 @@ for iseed = seedIndex
                     grangercfg.method  = 'granger';
                     grangercfg.granger.conditional = 'no';
                     grangercfg.granger.sfmethod = 'bivariate';
-                    grangercfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
+                    %                                         grangercfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
+                    grangercfg.channelcmb = sigPair;
                     grangerM      = ft_connectivityanalysis(grangercfg, freqM);
                     
                     for ilabel = 1:numel(grangerM.labelcmb)
@@ -2002,14 +2063,14 @@ for iseed = seedIndex
                 
                 %%%%---- calculate PAC in Intact condition ---- %%%%
                 % calculate fourier spectrum using wavelet
-%                 cfg            = [];
-%                 cfg.output     = 'fourier';
-%                 cfg.method     = 'wavelet';
-%                 cfg.channel = seedElec;
-%                 cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
-%                 cfg.toi = min(timeWin):0.002:max(timeWin);
-%                 cfg.width = 7;
-%                 cfg.keeptrials = 'yes';
+                %                 cfg            = [];
+                %                 cfg.output     = 'fourier';
+                %                 cfg.method     = 'wavelet';
+                %                 cfg.channel = seedElec;
+                %                 cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
+                %                 cfg.toi = min(timeWin):0.002:max(timeWin);
+                %                 cfg.width = 7;
+                %                 cfg.keeptrials = 'yes';
                 
                 % calculate fourier spectrum using hilbert
                 cfg              = [];
@@ -2104,7 +2165,7 @@ for iseed = seedIndex
             end
             
             
-                        
+            
             %% section5-2: calculate cross regional PAC (circlar correlation)%%
             %%%%%%%%%%%%%%%%%%%%%%%%
             if strcmp(calculate,'cirPACregion')
@@ -2178,13 +2239,13 @@ for iseed = seedIndex
                 trlDataS = ft_selectdata(cfg,trlData);
                 
                 
-               %%%%---- calculate PAC in Intact condition ---- %%%%
+                %%%%---- calculate PAC in Intact condition ---- %%%%
                 % calculate Power spectrum
                 cfg            = [];
                 cfg.output     = 'fourier';
                 cfg.method     = 'wavelet';
                 cfg.channel = seedElec;
-                cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
+                cfg.foi          = [2:2:30,35:5:120]; %logspace(log10(2),log10(128),32);
                 cfg.toi = min(timeWin):0.002:max(timeWin);
                 cfg.width = 5;
                 cfg.keeptrials = 'yes';
@@ -2194,14 +2255,14 @@ for iseed = seedIndex
                 freqLowS    = ft_freqanalysis(cfg, trlDataS);
                 
                 cfg.channel = searchElec;
-                cfg.foi          = [35:5:120];
+                cfg.foi          = [2:2:30,35:5:120];
                 freqHighM    = ft_freqanalysis(cfg, trlDataM);
                 freqHighS    = ft_freqanalysis(cfg, trlDataS);
                 
                 
                 for iseedElec = 1:numel(seedElec)
                     for isearchElec =  1:numel(searchElec)
-                        allChanCmb = [allChanCmb;[iseedElec isearchElec]];
+                        allChanCmb = [allChanCmb;[seedElec(iseedElec) searchElec(isearchElec)]];
                         [pacmat, ~] = find_pac(freqHighM, freqLowM, [iseedElec,isearchElec]);
                         allPACM(Npair,:,:) = pacmat;
                         
@@ -2233,8 +2294,8 @@ for iseed = seedIndex
                 
                 Para.chanCMB{isub} = allChanCmb;
                 Para.timeWin = timeWin;
-                Para.freqlow = freqM.freq(freqM.freq<=30);
-                Para.freqhigh = freqM.freq(freqM.freq>30);
+                Para.freqlow = freqHighM.freq(freqHighM.freq<=30);
+                Para.freqhigh = freqHighM.freq(freqHighM.freq>30);
                 nelec = nelec+Npair-1;
                 
             end
@@ -2380,7 +2441,7 @@ for iseed = seedIndex
         
         %% section2: calculate Coherence (LMEM) %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'COH')
+        if strcmp(calculate,'COH--')
             
             if ~any(allMetricM) | ~any(allMetricS)
                 continue
@@ -2434,7 +2495,7 @@ for iseed = seedIndex
                 yraw(:,ifreq) = [mean(rawVal1);mean(rawVal2)];
                 seraw(:,ifreq) = [std(rawVal1)./sqrt(numel(rawVal1));std(rawVal2)./sqrt(numel(rawVal2))];
                 
-                    
+                
             end
             
             if ~exist([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)],'file')

@@ -2,7 +2,7 @@ function varargout = batchCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'PSDmovie'
+    calculate = 'PACold'
 end
 
 % initialize base path and toolbox
@@ -1342,17 +1342,17 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         end
         
         
-        %% section6: calculate PAC %%
+        %% section6: calculate PAC (bestPAC) %%
         %%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'PACold')
+        if strcmp(calculate,'PACold--')
             
             % calculation parameters
             timeWin = [0 1];
             
             %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if exist([dataPath subname 'LAR_trlData.mat'],'file')
-                a = load([dataPath subname 'LAR_trlData']);
+            if exist([dataPath subname 'LARER_trlData.mat'],'file')
+                a = load([dataPath subname 'LARER_trlData']);
             end
             c = fieldnames(a);
             trlData = a.(c{1});
@@ -1454,6 +1454,123 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             
         end
         
+        %% section6: calculate PAC (circular) %%
+        %%%%%%%%%%%%%%%%%%%%%%%%
+        if strcmp(calculate,'PACold')
+            
+            % calculation parameters
+            timeWin = [0 1];
+            
+            %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            if exist([dataPath subname 'LARER_trlData.mat'],'file')
+                a = load([dataPath subname 'LARER_trlData']);
+            end
+            c = fieldnames(a);
+            trlData = a.(c{1});
+            
+            % choose ROI electrodes according to MNI coordinates
+            elecposMNI = trlData.elec.elecposMNI;
+            tempdev = pdist2(elecposMNI,aparc_coordiantes);
+            [it,~] = find(tempdev <=roiDist);
+            ROIelec = unique(it);
+            
+            % skip bad channels
+            badChanInd = trlData.trial{1,1}(ROIelec,1)==0;
+            ROIelec(badChanInd) = [];
+            
+            % skip if no electrode pair
+            if ~any(ROIelec)
+                continue
+            end
+            
+            cfg = [];
+            cfg.demean = 'yes';
+            cfg.detrend = 'yes';
+            
+            trlData = ft_preprocessing(cfg,trlData);
+            
+            % seperate conditions
+            cfg = [];
+            cfg.trials = find(trlData.trialinfo(:,1)==0);
+            trlDataM = ft_selectdata(cfg,trlData);
+            
+            cfg = [];
+            cfg.trials = find(trlData.trialinfo(:,1)==1);
+            trlDataS = ft_selectdata(cfg,trlData);
+            
+            if ~exist([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ROIText{iatlas}],'file')
+                mkdir([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ROIText{iatlas}])
+            end
+            
+            % calculate Power spectrum
+            cfg            = [];
+            cfg.output     = 'fourier';
+            cfg.method     = 'wavelet';
+            cfg.channel = ROIelec;
+            cfg.foi          = [2:2:30,35:5:120]; %logspace(log10(2),log10(128),32);
+            cfg.toi = min(timeWin):0.002:max(timeWin);
+            cfg.width = 5;
+            cfg.keeptrials = 'yes';
+            
+            ft_warning off
+            freqM    = ft_freqanalysis(cfg, trlDataM);
+            freqS    = ft_freqanalysis(cfg, trlDataS);
+            
+            % calculate single electrode PAC with shuffle
+            allPACM = [];
+            allPACS = [];
+            Npair = 1;
+            for ie = 1:numel(ROIelec)
+                
+                [pacmat, pacmatSig] = find_pac(freqM, freqM, [ie,ie]);
+                setappdata(gcf,'pacmat',pacmat);
+                setappdata(gcf,'pacmatSig',pacmatSig);
+                setappdata(gcf,'freqlow',freqM.freq(freqM.freq<=30));
+                setappdata(gcf,'freqhigh',freqM.freq(freqM.freq>30));
+                saveas(gcf,[resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ROIText{iatlas} filesep ...
+                    subname num2str(ROIelec(ie)) 'M.fig']);
+                close(gcf)
+                allPACM(Npair,:,:) = pacmat;
+                
+                [pacmat, pacmatSig] = find_pac(freqS, freqS, [ie,ie]);
+                setappdata(gcf,'pacmat',pacmat);
+                setappdata(gcf,'pacmatSig',pacmatSig);
+                setappdata(gcf,'freqlow',freqS.freq(freqS.freq<=30));
+                setappdata(gcf,'freqhigh',freqS.freq(freqS.freq>30));
+                saveas(gcf,[resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ROIText{iatlas} filesep ...
+                    subname num2str(ROIelec(ie)) 'S.fig']);
+                close(gcf)
+                allPACS(Npair,:,:) = pacmat;
+                
+                % count for pairs of eletrodes
+                Npair = Npair + 1;
+                
+            end
+            
+            
+            % generate index for Subject Electrode and Trial
+            metricM = allPACM;
+            metricS = allPACS;
+            
+            elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-2]');
+            subIndexM = cat(1,subIndexM,repmat(isub,Npair-1,1));
+            
+            
+            elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-2]');
+            subIndexS = cat(1,subIndexS,repmat(isub,Npair-1,1));
+            
+            % concontenate all trial responses in chosen ROI
+            allMetricM = cat(1,allMetricM,metricM);
+            allMetricS = cat(1,allMetricS,metricS);
+            
+            Para.chanCMB{isub} = ROIelec;
+            Para.freqlow = freqM.freq(freqM.freq<=30);
+            Para.freqhigh = freqM.freq(freqM.freq>30);
+            nelec = nelec+Npair-1;
+            
+        end
+        
         
         %% section6: calculate PAC %%
         %%%%%%%%%%%%%%%%%%%%%%%%
@@ -1502,34 +1619,34 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             trlDataS = ft_selectdata(cfg,trlData);
             
             
-               %%%%---- calculate PAC in Intact condition ---- %%%%
-                % calculate Power spectrum
-                cfg            = [];
-                cfg.output     = 'fourier';
-                cfg.method     = 'wavelet';
-                cfg.channel = ROIelec;
-                cfg.foi          = [2:2:30,35:5:120]; %logspace(log10(2),log10(128),32);
-                cfg.toi = min(timeWin):0.002:max(timeWin);
-                cfg.width = 5;
-                cfg.keeptrials = 'yes';
-                
-                ft_warning off
-                freqM    = ft_freqanalysis(cfg, trlDataM);
-                
-                freqS    = ft_freqanalysis(cfg, trlDataS);
+            %%%%---- calculate PAC in Intact condition ---- %%%%
+            % calculate Power spectrum
+            cfg            = [];
+            cfg.output     = 'fourier';
+            cfg.method     = 'wavelet';
+            cfg.channel = ROIelec;
+            cfg.foi          = [2:2:30,35:5:120]; %logspace(log10(2),log10(128),32);
+            cfg.toi = min(timeWin):0.002:max(timeWin);
+            cfg.width = 5;
+            cfg.keeptrials = 'yes';
             
-            % calculate electrode PAC 
-
-                cfg = [];
-                cfg.method = pacMethod;
+            ft_warning off
+            freqM    = ft_freqanalysis(cfg, trlDataM);
+            
+            freqS    = ft_freqanalysis(cfg, trlDataS);
+            
+            % calculate electrode PAC
+            
+            cfg = [];
+            cfg.method = pacMethod;
             cfg.channel = 'all';
-                cfg.freqlow = [2 30];
-                cfg.freqhigh = [31 120];
+            cfg.freqlow = [2 30];
+            cfg.freqhigh = [31 120];
             cfg.keeptrials = 'no';
             crossfreqM = ft_crossfrequencyanalysis(cfg, freqM);
-
+            
             crossfreqS = ft_crossfrequencyanalysis(cfg, freqS);
-          
+            
             % generate index for Subject Electrode and Trial
             metricM = crossfreqM.crsspctrm;
             metricS = crossfreqS.crsspctrm;

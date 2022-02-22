@@ -8,7 +8,7 @@ if nargin < 3
     chancmb = [1 1];
 end
 if nargin < 4
-    ph_freq_vec = [1 30];
+    ph_freq_vec = [3 30];
 end
 if nargin < 5
     amp_freq_vec = [32 200];
@@ -20,7 +20,7 @@ if nargin < 7
     shf_time = 0;
 end
 if nargin < 8
-    pvalue = 0.01;
+    pvalue = 0.05;
 end
 if nargin < 9
     plt = 'n';
@@ -50,6 +50,7 @@ pacmatSig = zeros(size(chancmb,1),numel(sig_pac_fp),numel(sig_mod_fp));
 total_loop_time = size(chancmb,1)*numel(sig_mod_fp)*numel(sig_pac_fp);
 loop_count = 0;
 strlen = 0;
+fprintf(newline)
 
 % calculate PAC
 for ichan = 1:size(chancmb,1)
