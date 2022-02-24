@@ -2063,51 +2063,48 @@ for iseed = seedIndex
                 
                 %%%%---- calculate PAC in Intact condition ---- %%%%
                 % calculate fourier spectrum using wavelet
-                cfg            = [];
-                cfg.output     = 'fourier';
-                cfg.method     = 'mtmconvol';
-                cfg.channel = seedElec;
-                cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
-                cfg.toi = min(timeWin):0.002:max(timeWin);
-%                 cfg.width = 4;
-                cfg.taper = 'hanning';
-                cfg.t_ftimwin = 5./cfg.foi;
-                cfg.keeptrials = 'yes';
-                ft_warning off
-                freqLow    = ft_freqanalysis(cfg, trlDataM);
+                                cfg            = [];
+                                cfg.output     = 'fourier';
+                                cfg.method     = 'wavelet';
+                                cfg.channel = seedElec;
+                                cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
+                                cfg.toi = min(timeWin):0.002:max(timeWin);
+                                cfg.width = 4;
+                                cfg.keeptrials = 'yes';
+                                ft_warning off
+                                freqLow    = ft_freqanalysis(cfg, trlDataM);
                 
-                cfg.channel = searchElec;
-                cfg.foi          = [35:5:120];
-                cfg.t_ftimwin = 5./cfg.foi;
-                freqHigh    = ft_freqanalysis(cfg, trlDataM);
+                                cfg.channel = searchElec;
+                                cfg.foi          = [35:5:120];
+                                freqHigh    = ft_freqanalysis(cfg, trlDataM);
                 
                 % calculate fourier spectrum using hilbert
-                %                 cfg              = [];
-                %                 cfg.output       = 'fourier';
-                %                 cfg.method       = 'hilbert';
-                %                 cfg.channel = seedElec;
-                %                 cfg.foi          = [4:2:30];
-                %                 cfg.width        =  0.3.*cfg.foi;
-                %                 cfg.toi = min(timeWin):0.002:max(timeWin);
-                %                 cfg.filttype = 'firws';
-                %                 cfg.filtorder = nan;
-                %                 cfg.filtdir = 'onepass-zerophase';
-                %                 cfg.keeptrials   = 'yes';
-                %
-                %                 ft_warning off
-                %                 freqLow    = ft_freqanalysis(cfg, trlDataM);
-                %
-                %                 cfg.channel = searchElec;
-                %                 cfg.foi          = [35:5:120];
-                %                 cfg.width        =  0.3.*cfg.foi;
-                %                 freqHigh    = ft_freqanalysis(cfg, trlDataM);
+%                 cfg              = [];
+%                 cfg.output       = 'fourier';
+%                 cfg.method       = 'hilbert';
+%                 cfg.channel = seedElec;
+%                 cfg.foi          = [4:2:30];
+%                 cfg.width        =  0.3.*cfg.foi;
+%                 cfg.toi = min(timeWin):0.002:max(timeWin);
+%                 cfg.filttype = 'firws';
+%                 cfg.filtorder = nan;
+%                 cfg.filtdir = 'onepass-zerophase';
+%                 cfg.keeptrials   = 'yes';
+%                 
+%                 ft_warning off
+%                 freqLow    = ft_freqanalysis(cfg, trlDataM);
+%                 
+%                 cfg.channel = searchElec;
+%                 cfg.foi          = [35:5:120];
+%                 cfg.width        =  0.3.*cfg.foi;
+%                 freqHigh    = ft_freqanalysis(cfg, trlDataM);
                 
                 % calcualte PAC
                 cfg = [];
                 cfg.method = pacMethod;
                 cfg.chanlow = freqLow.label;
                 cfg.chanhigh = freqHigh.label;
-                cfg.freqlow = [3 31];
+                cfg.freqlow = [3 30];
                 cfg.freqhigh = [31 120];
                 cfg.keeptrials = 'no';
                 crossfreqM = ft_crossfrequencyanalysis(cfg, freqLow,freqHigh);
@@ -2115,52 +2112,49 @@ for iseed = seedIndex
                 
                 
                 %%%%---- calculate PAC in Scrambled condition ---- %%%%
-                % calculate fourier spectrum using wavelet
-                cfg            = [];
-                cfg.output     = 'fourier';
-                cfg.method     = 'mtmconvol';
+                                % calculate fourier spectrum using wavelet
+                                cfg            = [];
+                                cfg.output     = 'fourier';
+                                cfg.method     = 'wavelet';
+                                cfg.channel = seedElec;
+                                cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
+                                cfg.toi = min(timeWin):0.002:max(timeWin);
+                                cfg.width = 4;
+                                cfg.keeptrials = 'yes';
+                                ft_warning off
+                                freqLow    = ft_freqanalysis(cfg, trlDataM);
+                
+                                cfg.channel = searchElec;
+                                cfg.foi          = [35:5:120];
+                                freqHigh    = ft_freqanalysis(cfg, trlDataM);
+                                
+                                % calculate fourier spectrum using hilbert
+                cfg              = [];
+                cfg.output       = 'fourier';
+                cfg.method       = 'hilbert';
                 cfg.channel = seedElec;
-                cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
+                cfg.foi          = [4:2:30];
+                cfg.width        =  0.3.*cfg.foi;
                 cfg.toi = min(timeWin):0.002:max(timeWin);
-%                 cfg.width = 4;
-                cfg.taper = 'hanning';
-                cfg.t_ftimwin = 5./cfg.foi;
-                cfg.keeptrials = 'yes';
+                cfg.filttype = 'firws';
+                cfg.filtorder = nan;
+                cfg.filtdir = 'onepass-zerophase';
+                cfg.keeptrials   = 'yes';
+                
                 ft_warning off
                 freqLow    = ft_freqanalysis(cfg, trlDataS);
                 
                 cfg.channel = searchElec;
                 cfg.foi          = [35:5:120];
-                cfg.t_ftimwin = 5./cfg.foi;
+                cfg.width        =  0.3.*cfg.foi;
                 freqHigh    = ft_freqanalysis(cfg, trlDataS);
-                
-                % calculate fourier spectrum using hilbert
-                %                 cfg              = [];
-                %                 cfg.output       = 'fourier';
-                %                 cfg.method       = 'hilbert';
-                %                 cfg.channel = seedElec;
-                %                 cfg.foi          = [4:2:30];
-                %                 cfg.width        =  0.3.*cfg.foi;
-                %                 cfg.toi = min(timeWin):0.002:max(timeWin);
-                %                 cfg.filttype = 'firws';
-                %                 cfg.filtorder = nan;
-                %                 cfg.filtdir = 'onepass-zerophase';
-                %                 cfg.keeptrials   = 'yes';
-                %
-                %                 ft_warning off
-                %                 freqLow    = ft_freqanalysis(cfg, trlDataS);
-                %
-                %                 cfg.channel = searchElec;
-                %                 cfg.foi          = [35:5:120];
-                %                 cfg.width        =  0.3.*cfg.foi;
-                %                 freqHigh    = ft_freqanalysis(cfg, trlDataS);
                 
                 % calcualte PAC
                 cfg = [];
                 cfg.method = pacMethod;
                 cfg.chanlow = freqLow.label;
                 cfg.chanhigh = freqHigh.label;
-                cfg.freqlow = [3 31];
+                cfg.freqlow = [3 30];
                 cfg.freqhigh = [31 120];
                 cfg.keeptrials = 'no';
                 crossfreqS = ft_crossfrequencyanalysis(cfg, freqLow,freqHigh);

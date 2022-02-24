@@ -1344,7 +1344,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         
         %% section6: calculate PAC (bestPAC) %%
         %%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'PACold--')
+        if strcmp(calculate,'PACold')
             
             % calculation parameters
             timeWin = [0 1];
@@ -1456,7 +1456,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         
         %% section6: calculate PAC (circular) %%
         %%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'PACold')
+        if strcmp(calculate,'PACold--')
             
             % calculation parameters
             timeWin = [0 1];
