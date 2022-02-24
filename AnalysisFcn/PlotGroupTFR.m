@@ -105,15 +105,15 @@ if contains(pathname,'PAC')
     end
     
     freqhigh = [30 150];
-    freqlow = [3 40];
+    freqlow = [2 30];
     fhInd = Para.freqhigh >= freqhigh(1) & Para.freqhigh <= freqhigh(2);
     flInd = Para.freqlow >= freqlow(1) & Para.freqlow <= freqlow(2);
     
-    pMap = pMap;
-    cdat = tMap;
+    pMap = pMap(fhInd,flInd);
+    cdat = tMap(fhInd,flInd);
     vdat = Para.freqhigh(fhInd);
     hdat = Para.freqlow(flInd);
-    y2plot = y2plot;
+    y2plot = y2plot(:,flInd,fhInd);
 
     
     clim = [min(cdat(:)) max(cdat(:))];

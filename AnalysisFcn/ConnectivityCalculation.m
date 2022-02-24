@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'COH'
+    calculate = 'PACregion'
 end
 
 % initialize base path and toolbox
@@ -2077,8 +2077,8 @@ for iseed = seedIndex
                 cfg.output       = 'fourier';
                 cfg.method       = 'hilbert';
                 cfg.channel = seedElec;
-                cfg.foi          = [2:2:30];
-                cfg.width        =  0.2.*cfg.foi;
+                cfg.foi          = [4:2:30];
+                cfg.width        =  0.1.*cfg.foi;
                 cfg.toi = min(timeWin):0.002:max(timeWin);
                 cfg.filttype = 'firws';
                 cfg.filtorder = nan;
@@ -2090,7 +2090,7 @@ for iseed = seedIndex
                 
                 cfg.channel = searchElec;
                 cfg.foi          = [35:5:120];
-                cfg.width        =  0.2.*cfg.foi;
+                cfg.width        =  0.1.*cfg.foi;
                 freqHigh    = ft_freqanalysis(cfg, trlDataM);
                 
                 % calcualte PAC
@@ -2110,8 +2110,8 @@ for iseed = seedIndex
                 cfg.output       = 'fourier';
                 cfg.method       = 'hilbert';
                 cfg.channel = seedElec;
-                cfg.foi          = [2:2:30];
-                cfg.width        =  0.2.*cfg.foi;
+                cfg.foi          = [4:2:30];
+                cfg.width        =  0.1.*cfg.foi;
                 cfg.toi = min(timeWin):0.002:max(timeWin);
                 cfg.filttype = 'firws';
                 cfg.filtorder = nan;
@@ -2123,7 +2123,7 @@ for iseed = seedIndex
                 
                 cfg.channel = searchElec;
                 cfg.foi          = [35:5:120];
-                cfg.width        =  0.2.*cfg.foi;
+                cfg.width        =  0.1.*cfg.foi;
                 freqHigh    = ft_freqanalysis(cfg, trlDataS);
                 
                 % calcualte PAC
@@ -2131,7 +2131,7 @@ for iseed = seedIndex
                 cfg.method = pacMethod;
                 cfg.chanlow = freqLow.label;
                 cfg.chanhigh = freqHigh.label;
-                cfg.freqlow = [2 30];
+                cfg.freqlow = [3 30];
                 cfg.freqhigh = [31 120];
                 cfg.keeptrials = 'no';
                 crossfreqS = ft_crossfrequencyanalysis(cfg, freqLow,freqHigh);

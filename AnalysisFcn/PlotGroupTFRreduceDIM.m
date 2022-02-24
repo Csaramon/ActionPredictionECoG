@@ -2,15 +2,15 @@
 
 
 % foi  = Para.freq>60 & Para.freq<90;
-foi  = Para.freq>20 & Para.freq<30;
-MetricM = squeeze(mean(allMetricM(:,foi,:),2));
-MetricS = squeeze(mean(allMetricS(:,foi,:),2));
-x2plot = Para.timePT;
+% foi  = Para.freq>20 & Para.freq<30;
+% MetricM = squeeze(mean(allMetricM(:,foi,:),2));
+% MetricS = squeeze(mean(allMetricS(:,foi,:),2));
+% x2plot = Para.timePT;
 
-% toi = Para.timePT > 0.45 & Para.timePT < 0.55;
-% MetricM = squeeze(nanmean(allMetricM(:,:,toi),3));
-% MetricS = squeeze(nanmean(allMetricS(:,:,toi),3));
-% x2plot = Para.freq;
+toi = Para.timePT > 0.45 & Para.timePT < 0.55;
+MetricM = squeeze(nanmean(allMetricM(:,:,toi),3));
+MetricS = squeeze(nanmean(allMetricS(:,:,toi),3));
+x2plot = Para.freq;
 
 
 tMap = [];
@@ -75,7 +75,7 @@ if numel(x2plot) == numel(Para.timePT)
     [p_fdr, p_masked] = fdr(pMap(corrTimeInd), 0.05,'Parametric');
     highlight = pMap<=p_fdr;
 else
-    corrFreqInd = Para.freq>2 & Para.freq< 255;
+    corrFreqInd = Para.freq>2 & Para.freq< 120;
     [p_fdr, p_masked] = fdr(pMap(corrFreqInd), 0.05,'Parametric');
     highlight = pMap<=p_fdr;
 end
@@ -89,7 +89,7 @@ hold on
 hM = shadedErrorBar(x2plot, y2plot(1,:),se2plot(1,:),{'color',[255 106 106]/255},1);
 hS = shadedErrorBar(x2plot, y2plot(2,:), se2plot(2,:),{'color',[30 144 255]/255},1);
 
-hsig = plot(x2plot,(max(y2plot(:))+0.2*range(y2plot(:)))*highlight,'k-','linewidth',2);
+hsig = plot(x2plot,(max(y2plot(:))+0.2*range(y2plot(:)))*highlight,'k*','linewidth',2);
 title(filename(1:end-4))
 % xlim([-0.5 1])
 % ylim([-2*max(abs(y2plot(:))),2*max(abs(y2plot(:)))])
