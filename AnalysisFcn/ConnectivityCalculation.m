@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PACregion'
+    calculate = 'PACmovie'
 end
 
 % initialize base path and toolbox
@@ -2195,8 +2195,152 @@ for iseed = seedIndex
             end
             
             
+        %% section5-2: calculate cross regional PAC (movie-wise) %%
+            %%%%%%%%%%%%%%%%%%%%%%%%
+            if strcmp(calculate,'PACmovie')
+                
+                % calculation parameters
+                
+                
+                %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            if exist([dataPath subname 'LARER_rerefData.mat'],'file')
+                a = load([dataPath subname 'LARER_rerefData']);
+            end
+            c = fieldnames(a);
+            rerefData = a.(c{1});
+                
+                % choose seed electrodes according to MNI coordinates
+                elecposMNI = rerefData.elec.elecposMNI;
+                tempdev = pdist2(elecposMNI,seed_coordiantes);
+                [it,~] = find(tempdev <=roiDist);
+                seedElec = unique(it);
+                
+                % choose search electrodes according to MNI coordinates
+                tempdev = pdist2(elecposMNI,search_coordiantes);
+                [it,~] = find(tempdev <=roiDist);
+                searchElec = unique(it);
+                
+                % skip bad channels
+                badChanInd = rerefData.trial{1,1}(seedElec,1)==0;
+                seedElec(badChanInd) = [];
+                
+                badChanInd = rerefData.trial{1,1}(searchElec,1)==0;
+                searchElec(badChanInd) = [];
+                
+                % skip if no electrode pair
+                if ~any(seedElec) | ~any(searchElec) | isempty(setdiff(seedElec,searchElec))
+                    continue
+                end
+                
+                if exist([dataPath subname '_eventdata.mat'],'file')
+                    a = load([dataPath subname '_eventdata']);
+                end
+                c = fieldnames(a);
+                camInfo = a.(c{1});
+                
+            % downsampling data and eventdata
+            cfg = [];
+            cfg.resamplefs = 500;
+            cfg.detrend         = 'yes';
+            cfg.demean         = 'yes';
+            rerefData = ft_resampledata(cfg, rerefData);
+            fs = rerefData.fsample;
+            camInfo(:,4) = num2cell(round(cell2mat(camInfo(:,4))./1000.*fs));
+                
+                
+                % remove superimposed electrodes
+                duplicateInd = intersect(searchElec,seedElec);
+                if ~isempty(duplicateInd)
+                    if numel(searchElec) > numel(seedElec)
+                        searchElec = setdiff(searchElec,duplicateInd);
+                    else
+                        seedElec = setdiff(seedElec,duplicateInd);
+                    end
+                end
+                
+                
+                %%%%---- calculate PAC in Intact condition ---- %%%%
+                % calculate fourier spectrum using wavelet
+                cfg            = [];
+                cfg.output     = 'fourier';
+                cfg.method     = 'mtmconvol';
+                cfg.channel = seedElec;
+                cfg.foi          = [2:2:30]; 
+                cfg.toi = 'all';
+%                 cfg.width = 4;
+                cfg.taper = 'hanning';
+                cfg.t_ftimwin = 5./cfg.foi;
+                cfg.keeptrials = 'yes';
+                ft_warning off
+                freqLow    = ft_freqanalysis(cfg, rerefData);
+                
+                cfg.channel = searchElec;
+                cfg.foi          = [35:5:120];
+                cfg.t_ftimwin = 5./cfg.foi;
+                freqHigh    = ft_freqanalysis(cfg, rerefData);
+                 
+                % calcualte PAC
+
+                % extract each movie's start time point (with first camera change excluded)
+                nc = 1;
+                while nc < size(camInfo,1)
+                    if camInfo{nc,3}==camInfo{nc+1,3}
+                        camInfo(nc+1,:) = [];
+                    else
+                        nc = nc+1;
+                    end
+                end
+                
+                allPACM = [];
+                allPACS = [];
+                for iseedElec = 1:numel(seedElec)
+                    for isearchElec = 1:numel(searchElec)
+                        
+                        seedTS = squeeze(freqLow.fourierspctrm(:,iseedElec,:,:));
+                        searchTS = squeeze(freqHigh.fourierspctrm(:,isearchElec,:,:));
+                        cfcdata = zeros(size(camInfo,1),size(seedTS,1),size(searchTS,1));
+                        for ii = 1:size(camInfo,1)
+                            % extract data of each movie
+                            tmpseedTS = seedTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                            tmpsearchTS = searchTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                            
+                            [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                            % concatenate data according to condition
+                            cfcdata(ii,:,:) = mvldata;
+                             
+                        end
+                        allPACM = cat(1,allPACM,abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1)));
+                        allPACS = cat(1,allPACS,abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1)));
+                    end
+                end
+      
+                Npair = size(allPACM,1);
+                
+                % generate index for Subject Electrode and Trial
+                metricM = allPACM;
+                metricS = allPACS;
+                
+                elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-1]');
+                subIndexM = cat(1,subIndexM,repmat(isub,Npair,1));
+                
+                
+                elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-1]');
+                subIndexS = cat(1,subIndexS,repmat(isub,Npair,1));
+                
+                % concontenate all trial responses in chosen ROI
+                allMetricM = cat(1,allMetricM,metricM);
+                allMetricS = cat(1,allMetricS,metricS);
+                
+
+                Para.freqlow = freqLow.freq;
+                Para.freqhigh = freqHigh.freq;
+                nelec = nelec+Npair;
+                
+            end
             
-            %% section5-2: calculate cross regional PAC (circlar correlation)%%
+                        
+            %% section5-3: calculate cross regional PAC (circlar correlation)%%
             %%%%%%%%%%%%%%%%%%%%%%%%
             if strcmp(calculate,'cirPACregion')
                 
@@ -2777,7 +2921,7 @@ for iseed = seedIndex
         
         %% section5: calculate cross regional PAC %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'PACregion') | strcmp(calculate,'cirPACregion')
+        if strcmp(calculate,'PACregion') | strcmp(calculate,'PACmovie') | strcmp(calculate,'cirPACregion')
             CondIndexM = ones(size(subIndexM));
             CondIndexS = 2*ones(size(subIndexS));
             
@@ -2854,3 +2998,30 @@ end
 varargout{1} = toc;
 
 end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SUBFUNCTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+function [mvldata] = data2mvl(LFsigtemp,HFsigtemp)
+% calculate  mean vector length (complex value) per trial
+% mvldata dim: LF*HF
+if size(LFsigtemp,1) > size(LFsigtemp,2)
+    LFsigtemp = LFsigtemp';
+end
+if size(HFsigtemp,1) > size(HFsigtemp,2)
+    HFsigtemp = HFsigtemp';
+end
+
+LFphas   = angle(LFsigtemp);
+HFamp    = abs(HFsigtemp);
+mvldata  = zeros(size(LFsigtemp,1),size(HFsigtemp,1));    % mean vector length
+
+for i = 1:size(LFsigtemp,1)
+  for j = 1:size(HFsigtemp,1)
+    mvldata(i,j) = nanmean(HFamp(j,:).*exp(1i*LFphas(i,:)));
+  end
+end
+
+end % function
