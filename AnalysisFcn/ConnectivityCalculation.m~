@@ -2270,14 +2270,14 @@ for iseed = seedIndex
                 cfg.toi = 'all';
 %                 cfg.width = 4;
                 cfg.taper = 'hanning';
-                cfg.t_ftimwin = 5./cfg.foi;
+                cfg.t_ftimwin = 4./cfg.foi;
                 cfg.keeptrials = 'yes';
                 ft_warning off
                 freqLow    = ft_freqanalysis(cfg, rerefData);
                 
                 cfg.channel = searchElec;
                 cfg.foi          = [35:5:120];
-                cfg.t_ftimwin = 5./cfg.foi;
+                cfg.t_ftimwin = 4./cfg.foi;
                 freqHigh    = ft_freqanalysis(cfg, rerefData);
                  
                 % calcualte PAC
@@ -2332,11 +2332,9 @@ for iseed = seedIndex
                 allMetricM = cat(1,allMetricM,metricM);
                 allMetricS = cat(1,allMetricS,metricS);
                 
-                Para.chanCMB{isub} = crossfreqM.labelcmb;
-                Para.pacMethod = pacMethod;
-                Para.timeWin = timeWin;
-                Para.freqlow = crossfreqM.freqlow;
-                Para.freqhigh = crossfreqM.freqhigh;
+
+                Para.freqlow = freqLow.freq;
+                Para.freqhigh = freqHigh.freq;
                 nelec = nelec+Npair;
                 
             end
@@ -2923,7 +2921,7 @@ for iseed = seedIndex
         
         %% section5: calculate cross regional PAC %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'PACregion') | strcmp(calculate,'cirPACregion')
+        if strcmp(calculate,'PACregion') | strcmp(calculate,'PACmovie') | strcmp(calculate,'cirPACregion')
             CondIndexM = ones(size(subIndexM));
             CondIndexS = 2*ones(size(subIndexS));
             
