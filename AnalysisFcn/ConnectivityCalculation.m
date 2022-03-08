@@ -46,8 +46,8 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1 3 7];
-searchIndex = [1 3 7];
+seedIndex = [1];
+searchIndex = [7];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
@@ -2200,7 +2200,7 @@ for iseed = seedIndex
             if strcmp(calculate,'PACmovie')
                 
                 % calculation parameters
-                
+                numShuffle = 500;
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2262,45 +2262,45 @@ for iseed = seedIndex
                 
                 %%%%---- calculate PAC in Intact condition ---- %%%%
                 % calculate fourier spectrum using stft
-                %                 cfg            = [];
-                %                 cfg.output     = 'fourier';
-                %                 cfg.method     = 'mtmconvol';
-                %                 cfg.channel = seedElec;
-                %                 cfg.foi          = [2:2:30];
-                %                 cfg.toi = 'all';
-                % %                 cfg.width = 4;
-                %                 cfg.taper = 'hanning';
-                %                 cfg.t_ftimwin = 3./cfg.foi;
-                %                 cfg.keeptrials = 'yes';
-                %                 ft_warning off
-                %                 freqLow    = ft_freqanalysis(cfg, rerefData);
-                %
-                %                 cfg.channel = searchElec;
-                %                 cfg.foi          = [35:5:120];
-                %                 cfg.t_ftimwin = 3./cfg.foi;
-                %                 freqHigh    = ft_freqanalysis(cfg, rerefData);
-                
-                % calculate fourier spectrum using hilbert
-                cfg              = [];
-                cfg.output       = 'fourier';
-                cfg.method       = 'hilbert';
+                cfg            = [];
+                cfg.output     = 'fourier';
+                cfg.method     = 'mtmconvol';
                 cfg.channel = seedElec;
-                cfg.foi          = [4:2:30];
-                cfg.width        =  2;
+                cfg.foi          = [20:2:30];
                 cfg.toi = 'all';
-                %                  cfg.filttype = 'firws';
-                %                  cfg.filtorder = nan;
-                %                  cfg.filtdir = 'onepass-zerophase';
-                cfg.pad='nextpow2';
-                cfg.keeptrials   = 'yes';
-                
+                %                 cfg.width = 4;
+                cfg.taper = 'hanning';
+                cfg.t_ftimwin = 4./cfg.foi;
+                cfg.keeptrials = 'yes';
                 ft_warning off
                 freqLow    = ft_freqanalysis(cfg, rerefData);
                 
                 cfg.channel = searchElec;
-                cfg.foi          = [35:5:120];
-                %                  cfg.width        =  15;
+                cfg.foi          = [60:5:90];
+                cfg.t_ftimwin = 4./cfg.foi;
                 freqHigh    = ft_freqanalysis(cfg, rerefData);
+                
+                % calculate fourier spectrum using hilbert
+                %                 cfg              = [];
+                %                 cfg.output       = 'fourier';
+                %                 cfg.method       = 'hilbert';
+                %                 cfg.channel = seedElec;
+                %                 cfg.foi          = [20:2:30];
+                %                 cfg.width        =  2;
+                %                 cfg.toi = 'all';
+                %                 %                  cfg.filttype = 'firws';
+                %                 %                  cfg.filtorder = nan;
+                %                 %                  cfg.filtdir = 'onepass-zerophase';
+                %                 cfg.pad='nextpow2';
+                %                 cfg.keeptrials   = 'yes';
+                %
+                %                 ft_warning off
+                %                 freqLow    = ft_freqanalysis(cfg, rerefData);
+                %
+                %                 cfg.channel = searchElec;
+                %                 cfg.foi          = [60:5:90];
+                %                 %                  cfg.width        =  15;
+                %                 freqHigh    = ft_freqanalysis(cfg, rerefData);
                 
                 % calcualte PAC
                 
@@ -2314,6 +2314,7 @@ for iseed = seedIndex
                     end
                 end
                 
+                strlen = 0;
                 allPACM = [];
                 allPACS = [];
                 for iseedElec = 1:numel(seedElec)
@@ -2332,8 +2333,41 @@ for iseed = seedIndex
                             cfcdata(ii,:,:) = mvldata;
                             
                         end
-                        allPACM = cat(1,allPACM,abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1)));
-                        allPACS = cat(1,allPACS,abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1)));
+                        elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
+                        elecPACS = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
+                        
+                        
+                        % generate null distribution of CFC
+                        shfPACM = zeros(numShuffle,size(seedTS,1),size(searchTS,1));
+                        shfPACS = zeros(numShuffle,size(seedTS,1),size(searchTS,1));
+                        for ishf = 1:numShuffle
+                            % display calculation progress
+                            s = ['Calculating electrode pair: ' num2str(size(allPACM,1)+1) '/' ...
+                                num2str(numel(seedElec)*numel(searchElec)) ' ,permutation: ' ...
+                                num2str(ishf) '/' num2str(numShuffle)];
+                            strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
+                            strlen = strlentmp - strlen;
+                            
+                            cfcdata = zeros(size(camInfo,1),size(seedTS,1),size(searchTS,1));
+                            for ii = 1:size(camInfo,1)
+                                % extract data of each movie
+                                tmpseedTS = seedTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                                tmpsearchTS = searchTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                                randTime = randsample(size(tmpsearchTS,2),1);
+                                tmpsearchTS = [tmpsearchTS(:,randTime:end),tmpsearchTS(:,1:randTime-1)];
+                                
+                                [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                                % concatenate data according to condition
+                                cfcdata(ii,:,:) = mvldata;
+                            end
+                            shfPACM(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
+                            shfPACS(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
+                        end
+                        
+                        allPACM = cat(1,allPACM,(elecPACM-mean(shfPACM,1))./std(shfPACM,0,1));
+                        allPACS = cat(1,allPACS,(elecPACS-mean(shfPACS,1))./std(shfPACS,0,1));
+                        
+                        
                     end
                 end
                 

@@ -2069,7 +2069,7 @@ for iseed = seedIndex
                 cfg.channel = seedElec;
                 cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
                 cfg.toi = min(timeWin):0.002:max(timeWin);
-%                 cfg.width = 4;
+                %                 cfg.width = 4;
                 cfg.taper = 'hanning';
                 cfg.t_ftimwin = 5./cfg.foi;
                 cfg.keeptrials = 'yes';
@@ -2122,7 +2122,7 @@ for iseed = seedIndex
                 cfg.channel = seedElec;
                 cfg.foi          = [2:2:30]; %logspace(log10(2),log10(128),32);
                 cfg.toi = min(timeWin):0.002:max(timeWin);
-%                 cfg.width = 4;
+                %                 cfg.width = 4;
                 cfg.taper = 'hanning';
                 cfg.t_ftimwin = 5./cfg.foi;
                 cfg.keeptrials = 'yes';
@@ -2195,20 +2195,20 @@ for iseed = seedIndex
             end
             
             
-        %% section5-2: calculate cross regional PAC (movie-wise) %%
+            %% section5-2: calculate cross regional PAC (movie-wise) %%
             %%%%%%%%%%%%%%%%%%%%%%%%
             if strcmp(calculate,'PACmovie')
                 
                 % calculation parameters
-                
+                numShuffle = 200;
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if exist([dataPath subname 'LARER_rerefData.mat'],'file')
-                a = load([dataPath subname 'LARER_rerefData']);
-            end
-            c = fieldnames(a);
-            rerefData = a.(c{1});
+                if exist([dataPath subname 'LARER_rerefData.mat'],'file')
+                    a = load([dataPath subname 'LARER_rerefData']);
+                end
+                c = fieldnames(a);
+                rerefData = a.(c{1});
                 
                 % choose seed electrodes according to MNI coordinates
                 elecposMNI = rerefData.elec.elecposMNI;
@@ -2239,14 +2239,14 @@ for iseed = seedIndex
                 c = fieldnames(a);
                 camInfo = a.(c{1});
                 
-            % downsampling data and eventdata
-            cfg = [];
-            cfg.resamplefs = 500;
-            cfg.detrend         = 'yes';
-            cfg.demean         = 'yes';
-            rerefData = ft_resampledata(cfg, rerefData);
-            fs = rerefData.fsample;
-            camInfo(:,4) = num2cell(round(cell2mat(camInfo(:,4))./1000.*fs));
+                % downsampling data and eventdata
+                cfg = [];
+                cfg.resamplefs = 500;
+                cfg.detrend         = 'yes';
+                cfg.demean         = 'yes';
+                rerefData = ft_resampledata(cfg, rerefData);
+                fs = rerefData.fsample;
+                camInfo(:,4) = num2cell(round(cell2mat(camInfo(:,4))./1000.*fs));
                 
                 
                 % remove superimposed electrodes
@@ -2261,27 +2261,49 @@ for iseed = seedIndex
                 
                 
                 %%%%---- calculate PAC in Intact condition ---- %%%%
-                % calculate fourier spectrum using wavelet
-                cfg            = [];
-                cfg.output     = 'fourier';
-                cfg.method     = 'mtmconvol';
+                % calculate fourier spectrum using stft
+                %                 cfg            = [];
+                %                 cfg.output     = 'fourier';
+                %                 cfg.method     = 'mtmconvol';
+                %                 cfg.channel = seedElec;
+                %                 cfg.foi          = [2:2:30];
+                %                 cfg.toi = 'all';
+                % %                 cfg.width = 4;
+                %                 cfg.taper = 'hanning';
+                %                 cfg.t_ftimwin = 3./cfg.foi;
+                %                 cfg.keeptrials = 'yes';
+                %                 ft_warning off
+                %                 freqLow    = ft_freqanalysis(cfg, rerefData);
+                %
+                %                 cfg.channel = searchElec;
+                %                 cfg.foi          = [35:5:120];
+                %                 cfg.t_ftimwin = 3./cfg.foi;
+                %                 freqHigh    = ft_freqanalysis(cfg, rerefData);
+                
+                % calculate fourier spectrum using hilbert
+                cfg              = [];
+                cfg.output       = 'fourier';
+                cfg.method       = 'hilbert';
                 cfg.channel = seedElec;
-                cfg.foi          = [2:2:30]; 
+                cfg.foi          = [20:2:30];
+                cfg.width        =  2;
                 cfg.toi = 'all';
-%                 cfg.width = 4;
-                cfg.taper = 'hanning';
-                cfg.t_ftimwin = 4./cfg.foi;
-                cfg.keeptrials = 'yes';
+                %                  cfg.filttype = 'firws';
+                %                  cfg.filtorder = nan;
+                %                  cfg.filtdir = 'onepass-zerophase';
+                cfg.pad='nextpow2';
+                cfg.keeptrials   = 'yes';
+                
                 ft_warning off
                 freqLow    = ft_freqanalysis(cfg, rerefData);
                 
                 cfg.channel = searchElec;
-                cfg.foi          = [35:5:120];
-                cfg.t_ftimwin = 4./cfg.foi;
+                cfg.foi          = [60:5:90];
+                %                  cfg.width        =  15;
                 freqHigh    = ft_freqanalysis(cfg, rerefData);
-                 
+                
                 % calcualte PAC
-
+                
                 % extract each movie's start time point (with first camera change excluded)
                 nc = 1;
                 while nc < size(camInfo,1)
@@ -2308,13 +2330,40 @@ for iseed = seedIndex
                             [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
                             % concatenate data according to condition
                             cfcdata(ii,:,:) = mvldata;
-                             
+                            
                         end
-                        allPACM = cat(1,allPACM,abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1)));
-                        allPACS = cat(1,allPACS,abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1)));
+                        elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
+                        elecPACS = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
+                        
+                        
+                        % generate null distribution of CFC
+                        shfPACM = zeros(numShuffle,size(seedTS,1),size(searchTS,1));
+                        shfPACS = zeros(numShuffle,size(seedTS,1),size(searchTS,1));
+                        for ishf = 1:numShuffle
+                            ishf
+                            cfcdata = zeros(size(camInfo,1),size(seedTS,1),size(searchTS,1));
+                            for ii = 1:size(camInfo,1)
+                                % extract data of each movie
+                                tmpseedTS = seedTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                                tmpsearchTS = searchTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                                randTime = randsample(size(tmpsearchTS,2),1);
+                                tmpsearchTS = [tmpsearchTS(:,randTime:end),tmpsearchTS(:,1:randTime-1)];
+                                
+                                [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                                % concatenate data according to condition
+                                cfcdata(ii,:,:) = mvldata;
+                            end
+                            shfPACM(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
+                            shfPACS(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
+                        end
+                        
+                        allPACM = cat(1,allPACM,(elecPACM-mean(shfPACM,1))./std(shfPACM,0,1));
+                        allPACS = cat(1,allPACS,(elecPACS-mean(shfPACS,1))./std(shfPACS,0,1));
+                        
+                        
                     end
                 end
-      
+                
                 Npair = size(allPACM,1);
                 
                 % generate index for Subject Electrode and Trial
@@ -2332,14 +2381,14 @@ for iseed = seedIndex
                 allMetricM = cat(1,allMetricM,metricM);
                 allMetricS = cat(1,allMetricS,metricS);
                 
-
+                
                 Para.freqlow = freqLow.freq;
                 Para.freqhigh = freqHigh.freq;
                 nelec = nelec+Npair;
                 
             end
             
-                        
+            
             %% section5-3: calculate cross regional PAC (circlar correlation)%%
             %%%%%%%%%%%%%%%%%%%%%%%%
             if strcmp(calculate,'cirPACregion')
@@ -3019,9 +3068,9 @@ HFamp    = abs(HFsigtemp);
 mvldata  = zeros(size(LFsigtemp,1),size(HFsigtemp,1));    % mean vector length
 
 for i = 1:size(LFsigtemp,1)
-  for j = 1:size(HFsigtemp,1)
-    mvldata(i,j) = nanmean(HFamp(j,:).*exp(1i*LFphas(i,:)));
-  end
+    for j = 1:size(HFsigtemp,1)
+        mvldata(i,j) = nanmean(HFamp(j,:).*exp(1i*LFphas(i,:)));
+    end
 end
 
 end % function
