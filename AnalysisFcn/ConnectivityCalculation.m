@@ -46,8 +46,8 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1];
-searchIndex = [7];
+seedIndex = [7];
+searchIndex = [3];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
@@ -2314,61 +2314,61 @@ for iseed = seedIndex
                     end
                 end
                 
-                strlen = 0;
-                allPACM = [];
-                allPACS = [];
-                for iseedElec = 1:numel(seedElec)
-                    for isearchElec = 1:numel(searchElec)
+                a = 1:numel(seedElec);
+                b = 1:numel(searchElec);
+                [m,n] = meshgrid(a,b);
+                pairInd = [reshape(m,[],1),reshape(n,[],1)];
+                pairIndC = parallel.pool.Constant(pairInd);
+                
+                allPACM = zeros(size(pairInd,1),numel(freqLow.freq),numel(freqHigh.freq));
+                allPACS = zeros(size(pairInd,1),numel(freqLow.freq),numel(freqHigh.freq));
+                lowFourier = parallel.pool.Constant(freqLow.fourierspctrm);
+                highFourier = parallel.pool.Constant(freqHigh.fourierspctrm);
+                
+                parfor ip = 1:size(pairInd,1)
+                    
+                    seedTS = squeeze(lowFourier.Value(:,pairIndC.Value(ip,1),:,:));
+                    searchTS = squeeze(highFourier.Value(:,pairIndC.Value(ip,2),:,:));
+                    cfcdata = zeros(size(camInfo,1),size(seedTS,1),size(searchTS,1));
+                    for ii = 1:size(camInfo,1)
+                        % extract data of each movie
+                        tmpseedTS = seedTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                        tmpsearchTS = searchTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                         
-                        seedTS = squeeze(freqLow.fourierspctrm(:,iseedElec,:,:));
-                        searchTS = squeeze(freqHigh.fourierspctrm(:,isearchElec,:,:));
+                        [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                        % concatenate data according to condition
+                        cfcdata(ii,:,:) = mvldata;
+                        
+                    end
+                    elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
+                    elecPACS = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
+                    
+                    
+                    % generate null distribution of CFC
+                    shfPACM = zeros(numShuffle,size(seedTS,1),size(searchTS,1));
+                    shfPACS = zeros(numShuffle,size(seedTS,1),size(searchTS,1));
+                    for ishf = 1:numShuffle
+                        
                         cfcdata = zeros(size(camInfo,1),size(seedTS,1),size(searchTS,1));
                         for ii = 1:size(camInfo,1)
                             % extract data of each movie
                             tmpseedTS = seedTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                             tmpsearchTS = searchTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                            randTime = randsample(size(tmpsearchTS,2),1);
+                            tmpsearchTS = [tmpsearchTS(:,randTime:end),tmpsearchTS(:,1:randTime-1)];
                             
                             [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
                             % concatenate data according to condition
                             cfcdata(ii,:,:) = mvldata;
-                            
                         end
-                        elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
-                        elecPACS = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
-                        
-                        
-                        % generate null distribution of CFC
-                        shfPACM = zeros(numShuffle,size(seedTS,1),size(searchTS,1));
-                        shfPACS = zeros(numShuffle,size(seedTS,1),size(searchTS,1));
-                        for ishf = 1:numShuffle
-                            % display calculation progress
-                            s = ['Calculating electrode pair: ' num2str(size(allPACM,1)+1) '/' ...
-                                num2str(numel(seedElec)*numel(searchElec)) ' ,permutation: ' ...
-                                num2str(ishf) '/' num2str(numShuffle)];
-                            strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
-                            strlen = strlentmp - strlen;
-                            
-                            cfcdata = zeros(size(camInfo,1),size(seedTS,1),size(searchTS,1));
-                            for ii = 1:size(camInfo,1)
-                                % extract data of each movie
-                                tmpseedTS = seedTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
-                                tmpsearchTS = searchTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
-                                randTime = randsample(size(tmpsearchTS,2),1);
-                                tmpsearchTS = [tmpsearchTS(:,randTime:end),tmpsearchTS(:,1:randTime-1)];
-                                
-                                [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
-                                % concatenate data according to condition
-                                cfcdata(ii,:,:) = mvldata;
-                            end
-                            shfPACM(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
-                            shfPACS(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
-                        end
-                        
-                        allPACM = cat(1,allPACM,(elecPACM-mean(shfPACM,1))./std(shfPACM,0,1));
-                        allPACS = cat(1,allPACS,(elecPACS-mean(shfPACS,1))./std(shfPACS,0,1));
-                        
-                        
+                        shfPACM(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
+                        shfPACS(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
                     end
+                    
+                    allPACM(ip,:,:) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
+                    allPACS(ip,:,:)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
+                    
+                    
                 end
                 
                 Npair = size(allPACM,1);
