@@ -47,7 +47,7 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
 seedIndex = [7];
-searchIndex = [3];
+searchIndex = [1];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
@@ -2260,7 +2260,7 @@ for iseed = seedIndex
                 end
                 
                 
-                %%%%---- calculate PAC in Intact condition ---- %%%%
+                %%%%---- calculate PAC ---- %%%%
                 % calculate fourier spectrum using stft
                 cfg            = [];
                 cfg.output     = 'fourier';
@@ -2270,14 +2270,14 @@ for iseed = seedIndex
                 cfg.toi = 'all';
                 %                 cfg.width = 4;
                 cfg.taper = 'hanning';
-                cfg.t_ftimwin = 4./cfg.foi;
+                cfg.t_ftimwin = 3./cfg.foi;
                 cfg.keeptrials = 'yes';
                 ft_warning off
                 freqLow    = ft_freqanalysis(cfg, rerefData);
                 
                 cfg.channel = searchElec;
                 cfg.foi          = [60:5:90];
-                cfg.t_ftimwin = 4./cfg.foi;
+                cfg.t_ftimwin = 3./cfg.foi;
                 freqHigh    = ft_freqanalysis(cfg, rerefData);
                 
                 % calculate fourier spectrum using hilbert

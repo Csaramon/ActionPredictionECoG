@@ -2,7 +2,7 @@ function varargout = batchCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'PSDmovie'
+    calculate = 'PACmovie'
 end
 
 % initialize base path and toolbox
@@ -1572,30 +1572,29 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         end
         
         
-        %% section6: calculate PAC %%
+        %% section6-3: calculate  PAC (movie-wise) %%
         %%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'PAC')
+        if strcmp(calculate,'PACmovie')
             
             % calculation parameters
-            pacMethod = 'mvl'; % coh,plv,mlv,mi,pac
-            timeWin = [0 1];
+            numShuffle = 50;
             
             %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if exist([dataPath subname 'LARER_trlData.mat'],'file')
-                a = load([dataPath subname 'LARER_trlData']);
+            if exist([dataPath subname 'LARER_rerefData.mat'],'file')
+                a = load([dataPath subname 'LARER_rerefData']);
             end
             c = fieldnames(a);
-            trlData = a.(c{1});
+            rerefData = a.(c{1});
             
             % choose ROI electrodes according to MNI coordinates
-            elecposMNI = trlData.elec.elecposMNI;
+            elecposMNI = rerefData.elec.elecposMNI;
             tempdev = pdist2(elecposMNI,aparc_coordiantes);
             [it,~] = find(tempdev <=roiDist);
             ROIelec = unique(it);
             
             % skip bad channels
-            badChanInd = trlData.trial{1,1}(ROIelec,1)==0;
+            badChanInd = rerefData.trial{1,1}(ROIelec,1)==0;
             ROIelec(badChanInd) = [];
             
             % skip if no electrode pair
@@ -1603,53 +1602,107 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
                 continue
             end
             
+            if exist([dataPath subname '_eventdata.mat'],'file')
+                a = load([dataPath subname '_eventdata']);
+            end
+            c = fieldnames(a);
+            camInfo = a.(c{1});
+            
+            % downsampling data and eventdata
             cfg = [];
-            cfg.demean = 'yes';
-            cfg.detrend = 'yes';
+            cfg.resamplefs = 500;
+            cfg.detrend         = 'yes';
+            cfg.demean         = 'yes';
+            rerefData = ft_resampledata(cfg, rerefData);
+            fs = rerefData.fsample;
+            camInfo(:,4) = num2cell(round(cell2mat(camInfo(:,4))./1000.*fs));
             
-            trlData = ft_preprocessing(cfg,trlData);
-            
-            % seperate conditions
-            cfg = [];
-            cfg.trials = find(trlData.trialinfo(:,1)==0);
-            trlDataM = ft_selectdata(cfg,trlData);
-            
-            cfg = [];
-            cfg.trials = find(trlData.trialinfo(:,1)==1);
-            trlDataS = ft_selectdata(cfg,trlData);
-            
-            
-            %%%%---- calculate PAC in Intact condition ---- %%%%
-            % calculate Power spectrum
+            %%%%---- calculate PAC ---- %%%%
+            % calculate fourier spectrum using stft
             cfg            = [];
             cfg.output     = 'fourier';
-            cfg.method     = 'wavelet';
+            cfg.method     = 'mtmconvol';
             cfg.channel = ROIelec;
-            cfg.foi          = [2:2:30,35:5:120]; %logspace(log10(2),log10(128),32);
-            cfg.toi = min(timeWin):0.002:max(timeWin);
-            cfg.width = 5;
+            cfg.foi          = [20:2:30];
+            cfg.toi = 'all';
+            %                 cfg.width = 4;
+            cfg.taper = 'hanning';
+            cfg.t_ftimwin = 4./cfg.foi;
             cfg.keeptrials = 'yes';
-            
             ft_warning off
-            freqM    = ft_freqanalysis(cfg, trlDataM);
+            freqLow    = ft_freqanalysis(cfg, rerefData);
             
-            freqS    = ft_freqanalysis(cfg, trlDataS);
+            cfg.channel = ROIelec;
+            cfg.foi          = [60:5:90];
+            cfg.t_ftimwin = 4./cfg.foi;
+            freqHigh    = ft_freqanalysis(cfg, rerefData);
             
-            % calculate electrode PAC
+            % extract each movie's start time point (with first camera change excluded)
+            nc = 1;
+            while nc < size(camInfo,1)
+                if camInfo{nc,3}==camInfo{nc+1,3}
+                    camInfo(nc+1,:) = [];
+                else
+                    nc = nc+1;
+                end
+            end
             
-            cfg = [];
-            cfg.method = pacMethod;
-            cfg.channel = 'all';
-            cfg.freqlow = [2 30];
-            cfg.freqhigh = [31 120];
-            cfg.keeptrials = 'no';
-            crossfreqM = ft_crossfrequencyanalysis(cfg, freqM);
             
-            crossfreqS = ft_crossfrequencyanalysis(cfg, freqS);
+            allPACM = zeros(numel(ROIelec),numel(freqLow.freq),numel(freqHigh.freq));
+            allPACS = zeros(numel(ROIelec),numel(freqLow.freq),numel(freqHigh.freq));
+            lowFourier = parallel.pool.Constant(freqLow.fourierspctrm);
+            highFourier = parallel.pool.Constant(freqHigh.fourierspctrm);
+            
+            parfor ip = 1:numel(ROIelec)
+                
+                seedTS = squeeze(lowFourier.Value(:,ip,:,:));
+                searchTS = squeeze(highFourier.Value(:,ip,:,:));
+                cfcdata = zeros(size(camInfo,1),size(seedTS,1),size(searchTS,1));
+                for ii = 1:size(camInfo,1)
+                    % extract data of each movie
+                    tmpseedTS = seedTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                    tmpsearchTS = searchTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                    
+                    [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                    % concatenate data according to condition
+                    cfcdata(ii,:,:) = mvldata;
+                    
+                end
+                elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
+                elecPACS = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
+                
+                
+                % generate null distribution of CFC
+                shfPACM = zeros(numShuffle,size(seedTS,1),size(searchTS,1));
+                shfPACS = zeros(numShuffle,size(seedTS,1),size(searchTS,1));
+                for ishf = 1:numShuffle
+                    
+                    cfcdata = zeros(size(camInfo,1),size(seedTS,1),size(searchTS,1));
+                    for ii = 1:size(camInfo,1)
+                        % extract data of each movie
+                        tmpseedTS = seedTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                        tmpsearchTS = searchTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                        randTime = randsample(size(tmpsearchTS,2),1);
+                        tmpsearchTS = [tmpsearchTS(:,randTime:end),tmpsearchTS(:,1:randTime-1)];
+                        
+                        [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                        % concatenate data according to condition
+                        cfcdata(ii,:,:) = mvldata;
+                    end
+                    shfPACM(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
+                    shfPACS(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
+                end
+                
+                allPACM(ip,:,:) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
+                allPACS(ip,:,:)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
+                
+                
+            end
+            
             
             % generate index for Subject Electrode and Trial
-            metricM = crossfreqM.crsspctrm;
-            metricS = crossfreqS.crsspctrm;
+            metricM = allPACM;
+            metricS = allPACS;
             
             elecIndexM =  cat(1,elecIndexM,[nelec:nelec+numel(ROIelec)-1]');
             subIndexM = cat(1,subIndexM,repmat(isub,numel(ROIelec),1));
@@ -1662,8 +1715,8 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             allMetricS = cat(1,allMetricS,metricS);
             
             Para.chanCMB{isub} = ROIelec;
-            Para.freqhigh = crossfreqM.freqhigh;
-            Para.freqlow = crossfreqM.freqlow;
+            Para.freqlow = freqLow.freq;
+            Para.freqhigh = freqHigh.freq;
             nelec = nelec+numel(ROIelec);
             
         end
@@ -2005,7 +2058,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
     
     %% section6: calculate PAC %%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if strcmp(calculate,'PAC') | strcmp(calculate,'PACold')
+    if strcmp(calculate,'PAC') | strcmp(calculate,'PACold') | strcmp(calculate,'PACmovie')
         CondIndexM = ones(size(subIndexM));
         CondIndexS = 2*ones(size(subIndexS));
         
@@ -2070,3 +2123,31 @@ end
 
 varargout{1} = toc/3600;
 
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% SUBFUNCTION
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    function [mvldata] = data2mvl(LFsigtemp,HFsigtemp)
+        % calculate  mean vector length (complex value) per trial
+        % mvldata dim: LF*HF
+        if size(LFsigtemp,1) > size(LFsigtemp,2)
+            LFsigtemp = LFsigtemp';
+        end
+        if size(HFsigtemp,1) > size(HFsigtemp,2)
+            HFsigtemp = HFsigtemp';
+        end
+        
+        LFphas   = angle(LFsigtemp);
+        HFamp    = abs(HFsigtemp);
+        mvldata  = zeros(size(LFsigtemp,1),size(HFsigtemp,1));    % mean vector length
+        
+        for i = 1:size(LFsigtemp,1)
+            for j = 1:size(HFsigtemp,1)
+                mvldata(i,j) = nanmean(HFamp(j,:).*exp(1i*LFphas(i,:)));
+            end
+        end
+        
+    end % function
