@@ -114,7 +114,7 @@ if contains(pathname,'PAC')
     cdat = tMap(fhInd,flInd);
     vdat = Para.freqhigh(fhInd);
     hdat = Para.freqlow(flInd);
-    y2plot = y2plot(:,flInd,fhInd);
+    y2plot = yraw(:,flInd,fhInd);
 
     
     clim = [min(cdat(:)) max(cdat(:))];
@@ -132,7 +132,7 @@ if contains(pathname,'PAC')
     % the significant voxels could be outlined with a black contour
     % plot outline
     hf = figure;
-%     subplot(1,3,3)
+    subplot(1,3,3)
     h = pcolor(hdat,vdat,cdat);shading interp
     [x,y] = meshgrid(hdat, vdat);
     x = interp2(x, 2); % change to 4 for round corners
@@ -164,24 +164,23 @@ if contains(pathname,'PAC')
     set(ch.Label,'string',['Scrambled>Intact      t-value      Intact>Scrambled'],...
         'position',[0.9 0],'fontsize',12);
     caxis([-3 3])
-    xlim([4 30])
+    title('Difference')
     
+    subplot(1,3,1)
+    hM = pcolor(hdat,vdat,squeeze(y2plot(1,:,:))');shading interp
+    ca = get(gca,'CLim');
+%         caxis([0 0.3])
     ylabel([filename(ti+1:end-4) ' Amplitude (Hz)'])
-    xlabel([filename(1:ti-1) ' Phase (Hz)'])
-    title([filename(1:end-4) ' (Nsub=' num2str(numel(unique(lmeTBL.Sub))) ' Nelec=' num2str(numel(unique(lmeTBL.Elec))) ')'])
+    title('Intact')
     
-%     subplot(1,3,1)
-%     hM = pcolor(hdat,vdat,squeeze(y2plot(1,:,:))');shading interp
-%     ca = get(gca,'CLim');
-%     xlim([4 30])
-%     ylabel([filename(ti+1:end-4) ' Amplitude (Hz)'])
-%     subplot(1,3,2)
-%     hS = pcolor(hdat,vdat,squeeze(y2plot(2,:,:))');shading interp
-%     caxis(ca)
-%     xlim([4 30])
-%     xlabel([filename(1:ti-1) ' Phase (Hz)'])
-%     
-%     suptitle([filename(1:end-4) ' (Nsub=' num2str(numel(unique(lmeTBL.Sub))) ' Nelec=' num2str(numel(unique(lmeTBL.Elec))) ')'])
+    subplot(1,3,2)
+    hS = pcolor(hdat,vdat,squeeze(y2plot(2,:,:))');shading interp
+    caxis(ca)
+%     caxis([0 0.3])
+    xlabel([filename(1:ti-1) ' Phase (Hz)'])
+        title('Scrambled')
+    
+    suptitle([filename(1:end-4) ' (Nsub=' num2str(numel(unique(lmeTBL.Sub))) ' Nelec=' num2str(numel(unique(lmeTBL.Elec))) ')'])
     
 end
 

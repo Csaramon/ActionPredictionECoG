@@ -2,15 +2,15 @@
 
 
 % foi  = Para.freq>60 & Para.freq<90;
-foi  = Para.freq>20 & Para.freq<30;
-MetricM = squeeze(mean(allMetricM(:,foi,:),2));
-MetricS = squeeze(mean(allMetricS(:,foi,:),2));
-x2plot = Para.timePT;
+% foi  = Para.freq>20 & Para.freq<30;
+% MetricM = squeeze(mean(allMetricM(:,foi,:),2));
+% MetricS = squeeze(mean(allMetricS(:,foi,:),2));
+% x2plot = Para.timePT;
 
-% toi = Para.timePT > 0.45 & Para.timePT < 0.55;
-% MetricM = squeeze(nanmean(allMetricM(:,:,toi),3));
-% MetricS = squeeze(nanmean(allMetricS(:,:,toi),3));
-% x2plot = Para.freq;
+toi = Para.timePT > 0.45 & Para.timePT < 0.55;
+MetricM = squeeze(nanmean(allMetricM(:,:,toi),3));
+MetricS = squeeze(nanmean(allMetricS(:,:,toi),3));
+x2plot = Para.freq;
 
 
 tMap = [];

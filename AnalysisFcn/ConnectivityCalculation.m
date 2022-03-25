@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PACmovie'
+    calculate = 'GrangerTF'
 end
 
 % initialize base path and toolbox
@@ -46,17 +46,17 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [7];
-searchIndex = [1];
+seedIndex = [1 7];
+searchIndex = [1 7];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
     for isearch = searchIndex
         
         %                 skip redundant pairs
-        %                         if ~ismember([iseed,isearch],allPair,'rows')
-        %                             continue
-        %                         end
+        %                                 if ~ismember([iseed,isearch],allPair,'rows')
+        %                                     continue
+        %                                 end
         
         if iseed==isearch | (iseed==1&isearch==3) | (iseed==3&isearch==1)
             continue
@@ -758,7 +758,7 @@ for iseed = seedIndex
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'Bipolar_trlData.mat']);
+                datafile = dir([dataPath subname 'LARER_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
@@ -856,7 +856,7 @@ for iseed = seedIndex
                     % calculate COH in Intact Condition
                     cfg            = [];
                     cfg.method     = 'coh';
-                    cfg.complex = 'absimag';
+                    %                     cfg.complex = 'absimag';
                     cfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
                     COHM             = ft_connectivityanalysis(cfg, freqM);
                     allcohM(:,:,in) = COHM.cohspctrm;
@@ -1613,16 +1613,16 @@ for iseed = seedIndex
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'LARER_trlData.mat']);
+                datafile = dir([dataPath subname 'Bipolar_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
                     load([dataPath subname 'IVC']);
                 end
                 % load electrode pairs with significant coherence
-                if exist([resultPath 'COH' filesep ROIAtlas{iseed}(1:end-4) filesep subname 'SigPair.mat'],'file')
-                    load([resultPath 'COH' filesep ROIAtlas{iseed}(1:end-4) filesep subname 'SigPair.mat']);
-                end
+%                 if exist([resultPath 'COH' filesep ROIAtlas{iseed}(1:end-4) filesep subname 'SigPair.mat'],'file')
+%                     load([resultPath 'COH' filesep ROIAtlas{iseed}(1:end-4) filesep subname 'SigPair.mat']);
+%                 end
                 
                 respElecInd = find(IVC.Intact.theta(:,2)<p | IVC.Intact.alpha(:,2)<p | IVC.Intact.beta(:,2)<p | ...
                     IVC.Intact.lgamma(:,2)<p | IVC.Intact.hgamma(:,2)<p | IVC.Scamble.theta(:,2)<p | ...
@@ -1717,8 +1717,8 @@ for iseed = seedIndex
                     grangercfg.method  = 'granger';
                     grangercfg.granger.conditional = 'no';
                     grangercfg.granger.sfmethod = 'bivariate';
-                    %                                         grangercfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
-                    grangercfg.channelcmb = sigPair;
+                    grangercfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
+%                     grangercfg.channelcmb = sigPair;
                     grangerM      = ft_connectivityanalysis(grangercfg, freqM);
                     
                     for ilabel = 1:numel(grangerM.labelcmb)

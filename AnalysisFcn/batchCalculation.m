@@ -2,7 +2,7 @@ function varargout = batchCalculation(calculate)
 
 tic;
 if nargin < 1
-    calculate = 'PACmovie'
+    calculate = 'PSDmovie'
 end
 
 % initialize base path and toolbox
@@ -643,11 +643,11 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             camInfo = a.(c{1});
             
             % downsampling data and eventdata
-            cfg = [];
-            cfg.resamplefs = 500;
-            cfg.detrend         = 'yes';
-            cfg.demean         = 'yes';
-            rerefData = ft_resampledata(cfg, rerefData);
+%             cfg = [];
+%             cfg.resamplefs = 500;
+%             cfg.detrend         = 'yes';
+%             cfg.demean         = 'yes';
+%             rerefData = ft_resampledata(cfg, rerefData);
             fs = rerefData.fsample;
             camInfo(:,4) = num2cell(cell2mat(camInfo(:,4))./1000);
             
@@ -1577,7 +1577,7 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         if strcmp(calculate,'PACmovie')
             
             % calculation parameters
-            numShuffle = 50;
+            numShuffle = 500;
             
             %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
