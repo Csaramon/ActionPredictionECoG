@@ -6,24 +6,19 @@
 
 
 PowThresh = 0.7;
-numIter = 1000;
+numIter = 5000;
 allCutOffFreq = zeros(numIter,120);
 strlen = 0;
 for i = 1: numIter
-    % display permutation progress
-    s = ['Permutation progress: ' num2str(i) '/' num2str(numIter)];
-    strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
-    strlen = strlentmp - strlen;
     
-    
-    testData.trial{1} = randn(1,501);
+    testData.trial{1} = randn(1,1001);
     
     % time-frequency decomposition (multi-taper)
     cfg              = [];
     cfg.output       = 'pow';
     cfg.method       = 'mtmconvol';
     cfg.foi          = 1:120;
-    cfg.t_ftimwin = 5./cfg.foi;
+    cfg.t_ftimwin = 2./cfg.foi;
     cfg.taper      =  'hanning';
     cfg.toi          = 'all';
     %                                 cfg.precision = 'single';
@@ -36,38 +31,55 @@ for i = 1: numIter
     freq = ft_freqanalysis(cfg,testData);
     
     cutOffFreq = zeros(size(freq.freq));
-    lpFreq = 4;
+    
     for hFreq = find(freq.freq >= 50 & freq.freq <= 100)
+        lpFreq = 4;
         HFdata = squeeze(freq.powspctrm(:,hFreq,:));
         HFdata(isnan(HFdata)) = [];
         L = numel(HFdata);
+        f = testData.fsample*(0:(L/2))/L;
         Y = fft(HFdata);
         P2 = abs(Y/L);
-        P1HF = P2(1:L/2+1);
+        P1HF = P2(round(1:L/2)+1);
         
         % find the cut off frequency for low pass filtering
         while cutOffFreq(hFreq) == 0
-            lpHFdata = lowpass(HFdata,lpFreq,testData.fsample,'Steepness',0.99);
+            
+                % display permutation progress
+    s = ['Permutation progress: ' num2str(i) '/' num2str(numIter) ';Power freq: ' num2str(freq.freq(hFreq)) '; Lowpass freq: ' num2str(lpFreq) 'Hz'];
+%     s = ['Permutation progress: ' num2str(i) '/' num2str(numIter)];
+    
+    strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
+    strlen = strlentmp - strlen;
+    
+            lpHFdata = lowpass(HFdata,lpFreq,testData.fsample,'Steepness',0.9999);
             Y = fft(lpHFdata);
             P2 = abs(Y/L);
-            P1lpHF = P2(1:L/2+1);
+            P1lpHF = P2(round(1:L/2)+1);
             
             if mean(P1lpHF) < PowThresh*mean(P1HF)
-                lpFreq = lpFreq + 0.1;
+                lpFreq = lpFreq + 0.5;
             else
-                cutOffFreq(hFreq) = lpFreq-0.1;
+                cutOffFreq(hFreq) = lpFreq;
             end
-        end
-        
-        
+
+%             if PowThresh*sum(P1HF) > sum(P1HF(1:lpFreq))
+%                 lpFreq = lpFreq + 1;
+%             else
+%                 cutOffFreq(hFreq) = f(lpFreq-1);
+%             end
+% 
+
+        end   
     end
     allCutOffFreq(i,:) = cutOffFreq;
     
 end
 
+plot(mean(allCutOffFreq))
 %% test fft with plot
 
-% Fs = 500;            % Sampling frequency
+% Fs = 1000;            % Sampling frequency
 % L = numel(HFdata);
 % Y = fft(HFdata);
 % P2 = abs(Y/L);
