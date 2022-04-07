@@ -2071,14 +2071,14 @@ for iseed = seedIndex
                 cfg.toi = min(timeWin):0.002:max(timeWin);
                 %                 cfg.width = 4;
                 cfg.taper = 'hanning';
-                cfg.t_ftimwin = 2./cfg.foi;
+                cfg.t_ftimwin = 5./cfg.foi;
                 cfg.keeptrials = 'yes';
                 ft_warning off
                 freqLow    = ft_freqanalysis(cfg, trlDataM);
                 
                 cfg.channel = searchElec;
                 cfg.foi          = [35:5:120];
-                cfg.t_ftimwin = 2./cfg.foi;
+                cfg.t_ftimwin = 5./cfg.foi;
                 freqHigh    = ft_freqanalysis(cfg, trlDataM);
                 
                 % calculate fourier spectrum using hilbert
@@ -2107,7 +2107,7 @@ for iseed = seedIndex
                 cfg.method = pacMethod;
                 cfg.chanlow = freqLow.label;
                 cfg.chanhigh = freqHigh.label;
-                cfg.freqlow = [2 31];
+                cfg.freqlow = [3 31];
                 cfg.freqhigh = [31 120];
                 cfg.keeptrials = 'no';
                 crossfreqM = ft_crossfrequencyanalysis(cfg, freqLow,freqHigh);
@@ -2124,14 +2124,14 @@ for iseed = seedIndex
                 cfg.toi = min(timeWin):0.002:max(timeWin);
                 %                 cfg.width = 4;
                 cfg.taper = 'hanning';
-                cfg.t_ftimwin = 2./cfg.foi;
+                cfg.t_ftimwin = 5./cfg.foi;
                 cfg.keeptrials = 'yes';
                 ft_warning off
                 freqLow    = ft_freqanalysis(cfg, trlDataS);
                 
                 cfg.channel = searchElec;
                 cfg.foi          = [35:5:120];
-                cfg.t_ftimwin = 2./cfg.foi;
+                cfg.t_ftimwin = 5./cfg.foi;
                 freqHigh    = ft_freqanalysis(cfg, trlDataS);
                 
                 % calculate fourier spectrum using hilbert
@@ -2160,7 +2160,7 @@ for iseed = seedIndex
                 cfg.method = pacMethod;
                 cfg.chanlow = freqLow.label;
                 cfg.chanhigh = freqHigh.label;
-                cfg.freqlow = [2 31];
+                cfg.freqlow = [3 31];
                 cfg.freqhigh = [31 120];
                 cfg.keeptrials = 'no';
                 crossfreqS = ft_crossfrequencyanalysis(cfg, freqLow,freqHigh);

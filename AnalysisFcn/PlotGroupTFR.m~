@@ -1,5 +1,5 @@
 
-% clear;
+clear;
 
 [filename, pathname, filterindex] = uigetfile(['/Users/qinchaoyi/Desktop/ActionPrediction/Results/TFR/*.mat']);
 
@@ -119,10 +119,8 @@ if contains(pathname,'PAC')
     if exist('allCutOffFreq','var')
         cutOffFreq = mean(allCutOffFreq);
         for ifreqh = Para.freqhigh
-            ifreql = Para.freqlow>ceil(cutOffFreq(ifreqh));
-            pMap(Para.freqhigh==ifreqh,ifreql) = nan;
-            cdat(Para.freqhigh==ifreqh,ifreql) = nan;
-            y2plot(:,ifreql,Para.freqhigh==ifreqh) = nan;
+            cutOffFreq(ifreqh)
+            Para.freqlow>
         end
     end
     
