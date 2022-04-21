@@ -6,7 +6,7 @@
 
 
 PowThresh = 0.7;
-numIter = 10000;
+numIter = 1;
 allCutOffFreq = zeros(numIter,120);
 strlen = 0;
 for i = 1: numIter
@@ -41,6 +41,7 @@ for i = 1: numIter
         Y = fft(HFdata);
         P2 = abs(Y/L).^2;
         P1HF = P2(1:L/2+1);
+        f(1) = [];
         P1HF(1) = [];
         
         % find the cut off frequency for low pass filtering
