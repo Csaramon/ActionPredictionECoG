@@ -1620,9 +1620,9 @@ for iseed = seedIndex
                     load([dataPath subname 'IVC']);
                 end
                 % load electrode pairs with significant coherence
-%                 if exist([resultPath 'COH' filesep ROIAtlas{iseed}(1:end-4) filesep subname 'SigPair.mat'],'file')
-%                     load([resultPath 'COH' filesep ROIAtlas{iseed}(1:end-4) filesep subname 'SigPair.mat']);
-%                 end
+                %                 if exist([resultPath 'COH' filesep ROIAtlas{iseed}(1:end-4) filesep subname 'SigPair.mat'],'file')
+                %                     load([resultPath 'COH' filesep ROIAtlas{iseed}(1:end-4) filesep subname 'SigPair.mat']);
+                %                 end
                 
                 respElecInd = find(IVC.Intact.theta(:,2)<p | IVC.Intact.alpha(:,2)<p | IVC.Intact.beta(:,2)<p | ...
                     IVC.Intact.lgamma(:,2)<p | IVC.Intact.hgamma(:,2)<p | IVC.Scamble.theta(:,2)<p | ...
@@ -1718,7 +1718,7 @@ for iseed = seedIndex
                     grangercfg.granger.conditional = 'no';
                     grangercfg.granger.sfmethod = 'bivariate';
                     grangercfg.channelcmb = {trlDataM.label(seedElec) trlDataM.label(searchElec)};
-%                     grangercfg.channelcmb = sigPair;
+                    %                     grangercfg.channelcmb = sigPair;
                     grangerM      = ft_connectivityanalysis(grangercfg, freqM);
                     
                     for ilabel = 1:numel(grangerM.labelcmb)
@@ -2200,7 +2200,7 @@ for iseed = seedIndex
             if strcmp(calculate,'PACmovie')
                 
                 % calculation parameters
-                numShuffle = 1;
+                numShuffle = 500;
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2276,7 +2276,7 @@ for iseed = seedIndex
                 freqLow    = ft_freqanalysis(cfg, rerefData);
                 
                 cfg.channel = searchElec;
-                cfg.foi          = [60:5:90];
+                cfg.foi          = [60:5:100];
                 cfg.t_ftimwin = 2./cfg.foi;
                 freqHigh    = ft_freqanalysis(cfg, rerefData);
                 
@@ -2325,7 +2325,7 @@ for iseed = seedIndex
                 lowFourier = parallel.pool.Constant(freqLow.fourierspctrm);
                 highFourier = parallel.pool.Constant(freqHigh.fourierspctrm);
                 
-                parfor ip = 1:size(pairInd,1)
+                parfor ip = 1:size(pairInd,1) % parfor
                     
                     seedTS = squeeze(lowFourier.Value(:,pairIndC.Value(ip,1),:,:));
                     searchTS = squeeze(highFourier.Value(:,pairIndC.Value(ip,2),:,:));
@@ -2335,9 +2335,21 @@ for iseed = seedIndex
                         tmpseedTS = seedTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                         tmpsearchTS = searchTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                         
-                        [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                        %                         [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                        
+                        nbin =20;
+                        [pacdata, ~] = data2pac(tmpseedTS,tmpsearchTS,nbin);
+                        mi = zeros(size(pacdata,1),size(pacdata,2));
+                        Q =ones(nbin,1)/nbin;
+                        for i=1:size(pacdata,1)
+                            for j=1:size(pacdata,2)
+                                P = squeeze(pacdata(i,j,:))/ nansum(pacdata(i,j,:));  % normalized distribution
+                                % KL distance
+                                mi(i,j) = nansum(P.* log2(P./Q))./log2(nbin);
+                            end
+                        end
                         % concatenate data according to condition
-                        cfcdata(ii,:,:) = mvldata;
+                        cfcdata(ii,:,:) = mi;
                         
                     end
                     elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
@@ -2357,9 +2369,19 @@ for iseed = seedIndex
                             randTime = randsample(size(tmpsearchTS,2),1);
                             tmpsearchTS = [tmpsearchTS(:,randTime:end),tmpsearchTS(:,1:randTime-1)];
                             
-                            [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+%                             [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+
+                            nbin =20;
+                            [pacdata, ~] = data2pac(tmpseedTS,tmpsearchTS,nbin);
+                            for i=1:size(pacdata,1)
+                                for j=1:size(pacdata,2)
+                                    P = squeeze(pacdata(i,j,:))/ nansum(pacdata(i,j,:));  % normalized distribution
+                                    % KL distance
+                                    mi(i,j) = nansum(P.* log2(P./Q))./log2(nbin);
+                                end
+                            end
                             % concatenate data according to condition
-                            cfcdata(ii,:,:) = mvldata;
+                            cfcdata(ii,:,:) = mi;
                         end
                         shfPACM(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
                         shfPACS(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
@@ -2367,7 +2389,8 @@ for iseed = seedIndex
                     
                     allPACM(ip,:,:) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
                     allPACS(ip,:,:)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
-                    
+%                     allPACM(ip,:,:) = elecPACM;
+%                     allPACS(ip,:,:)  = elecPACS;
                     
                 end
                 
@@ -3078,6 +3101,39 @@ for i = 1:size(LFsigtemp,1)
     for j = 1:size(HFsigtemp,1)
         mvldata(i,j) = nanmean(HFamp(j,:).*exp(1i*LFphas(i,:)));
     end
+end
+
+end % function
+
+function [pacdata, phasebins] = data2pac(LFsigtemp,HFsigtemp,nbin)
+% calculate phase amplitude distribution per trial
+% pacdata dim: LF*HF*Phasebin
+if size(LFsigtemp,1) > size(LFsigtemp,2)
+    LFsigtemp = LFsigtemp';
+end
+if size(HFsigtemp,1) > size(HFsigtemp,2)
+    HFsigtemp = HFsigtemp';
+end
+
+pacdata = zeros(size(LFsigtemp,1),size(HFsigtemp,1),nbin);
+
+Ang  = angle(LFsigtemp);
+Amp  = abs(HFsigtemp);
+phasebins = linspace(-pi,pi,nbin);
+
+% histc takes the edges rather than the centres of the bins
+phasebinedges = (2*pi)/(nbin-1)/2;
+phasebinedges = linspace(-pi-phasebinedges,pi+phasebinedges,nbin+1);
+
+[dum,bin] = histc(Ang, phasebinedges);  % binned low frequency phase
+binamp = zeros (size(HFsigtemp,1),nbin);      % binned amplitude
+
+for i = 1:size(Ang,1)
+    for k = 1:nbin
+        idx = (bin(i,:)==k);
+        binamp(:,k) = mean(Amp(:,idx),2);
+    end
+    pacdata(i,:,:) = binamp;
 end
 
 end % function
