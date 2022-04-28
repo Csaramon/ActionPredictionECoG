@@ -9,7 +9,7 @@ VMRI = spm_vol([MRIpathname MRIfilename]);
 
 ROIFiles = dir([ROIpathname filesep '*.label']);
 
-spm_figure('Create','Graphics','coregistration',1);
+F = spm_figure('Create','Graphics','coregistration',1);
 flags.graphics = 1;
 x = spm_coreg(VMRI,VCT,flags);
 Tmat = VCT.mat\spm_matrix(x(:)')*VMRI.mat;
@@ -29,13 +29,13 @@ for iroi = 1:numel(ROIFiles)
     allMRICoor{iroi,1} = MRICoor;
 end
 
-
+uiwait(F)
 
 %% determine the electrodes' order
 
-% [datafilename, datapathname, ~] = uigetfile(['/Users/qinchaoyi/Desktop/*.edf'],'Choose edf to get hdr info');
+[datafilename, datapathname, ~] = uigetfile(['/Users/qinchaoyi/Desktop/*.edf'],'Choose edf to get hdr info');
 
-% hdr = edfread([datapathname datafilename]);
+hdr = edfread([datapathname datafilename]);
 
 newLabel = {};
 for ich = 1:numel(hdr.label)
@@ -51,8 +51,7 @@ global gdata
 gdata.uniLabel = uniLabel;
 gdata.allMRICoor = allMRICoor;
 gdata.newuniLabel = uniLabel(1:numel(ROIFiles));
-gdata.newMRICoor = allMRICoor(1:numel(ROIFiles));
-gdata.numContact = tchan(:,2);
+
 gdata.h = figure('Name','All clusters','NumberTitle','off','color',[1 1 1]);
 gdata.ha =axes('Parent',gdata.h,'xtick',[],'xticklabel',[],'ytick',[],'yticklabel',[],'ztick',[],'zticklabel',[]);
 axis equal
@@ -152,17 +151,35 @@ try
     close(gdata.h)
 end
 
-newLabel = [];
-newCoor = cell2mat(gdata.newMRICoor);
+tempLabel = [];
+tempCoor = [];
 for ia = 1:numel(gdata.newuniLabel)
-    for il = 1:numel(hdr.label)
-        if contains(hdr.label{il},gdata.newuniLabel{ia})
-            newLabel = [newLabel;hdr.label(il)];
-        end
+
+    il = strncmp(hdr.label,gdata.newuniLabel{ia},length(gdata.newuniLabel{ia}));
+    tempLabel = [tempLabel;hdr.label(il)'];
+    if sum(il) < size(gdata.allMRICoor{ia},1)
+        warndlg(['Number of contacts are mismatch (' num2str(size(gdata.allMRICoor{ia},1)) ' coordinates compare to ',...
+            num2str(sum(il)) ' labels in ' gdata.newuniLabel{ia} '),'  ...
+            'outermost contact coordinates will be removed!'])
+    elseif sum(il) > size(gdata.allMRICoor{ia},1)
+        errordlg(['Number of contacts are mismatch (' num2str(size(gdata.allMRICoor{ia},1)) ' coordinates compare to ',...
+            num2str(sum(il)) ' labels in ' gdata.newuniLabel{ia} '),'  ...
+            'Please check the coordinates on the CT!'])
+        return
     end
+    tempCoor = [tempCoor;gdata.allMRICoor{ia}(1:sum(il),:)];
 end
 
-
+% sort all labels and cooridnates to their original orders
+newLabel = [];
+newCoor = [];
+for il = 1:numel(hdr.label)
+    tempInd = strcmp(hdr.label(il),tempLabel);
+ if any(tempInd)
+    newLabel = [newLabel;tempLabel(tempInd)];
+    newCoor = [newCoor;tempCoor(tempInd,:)];
+ end
+end
 %% transforma coordiantes to MNI space
 
 % generate temporary coordinates file
@@ -213,13 +230,13 @@ function ChooseElectrode(hObject,~)
 global gdata
 
 gdata.newuniLabel{hObject.UserData} = hObject.String{hObject.Value};
-gdata.newMRICoor{hObject.UserData} = gdata.allMRICoor{hObject.Value};
-if size(gdata.allMRICoor{hObject.Value},1) > gdata.numContact{hObject.Value}
-    warndlg(['Number of contacts are mismatch (' num2str(size(gdata.allMRICoor{hObject.Value},1)) ' coordinates compare to ',...
-        num2str(gdata.numContact{hObject.Value}) ' labels),'  ...
-        'outermost contact coordinates will be removed!'])
-    gdata.newMRICoor{hObject.UserData} = gdata.allMRICoor{hObject.UserData}(1:gdata.numContact{hObject.Value},:);
-end
+% gdata.newMRICoor{hObject.UserData} = gdata.allMRICoor{hObject.Value};
+% if size(gdata.allMRICoor{hObject.Value},1) > gdata.numContact{hObject.Value}
+%     warndlg(['Number of contacts are mismatch (' num2str(size(gdata.allMRICoor{hObject.Value},1)) ' coordinates compare to ',...
+%         num2str(gdata.numContact{hObject.Value}) ' labels),'  ...
+%         'outermost contact coordinates will be removed!'])
+%     gdata.newMRICoor{hObject.UserData} = gdata.allMRICoor{hObject.UserData}(1:gdata.numContact{hObject.Value},:);
+% end
 end
 
 
