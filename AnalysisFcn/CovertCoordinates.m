@@ -150,7 +150,7 @@ uiwait(gdata.h)
 try
     close(gdata.h)
 end
-
+errstop = [];
 tempLabel = [];
 tempCoor = [];
 for ia = 1:numel(gdata.newuniLabel)
@@ -158,18 +158,21 @@ for ia = 1:numel(gdata.newuniLabel)
     il = strncmp(hdr.label,gdata.newuniLabel{ia},length(gdata.newuniLabel{ia}));
     tempLabel = [tempLabel;hdr.label(il)'];
     if sum(il) < size(gdata.allMRICoor{ia},1)
-        warndlg(['Number of contacts are mismatch (' num2str(size(gdata.allMRICoor{ia},1)) ' coordinates compare to ',...
-            num2str(sum(il)) ' labels in ' gdata.newuniLabel{ia} '),'  ...
+        warndlg(['Number of contacts are mismatch, ' num2str(size(gdata.allMRICoor{ia},1)) ' coordinates compare to ',...
+            num2str(sum(il)) ' labels in ' gdata.newuniLabel{ia} '(' ROIFiles(ia).name '),'  ...
             'outermost contact coordinates will be removed!'])
     elseif sum(il) > size(gdata.allMRICoor{ia},1)
-        errordlg(['Number of contacts are mismatch (' num2str(size(gdata.allMRICoor{ia},1)) ' coordinates compare to ',...
-            num2str(sum(il)) ' labels in ' gdata.newuniLabel{ia} '),'  ...
+        errstop = 1;
+        errordlg(['Number of contacts are mismatch, ' num2str(size(gdata.allMRICoor{ia},1)) ' coordinates compare to ',...
+            num2str(sum(il)) ' labels in ' gdata.newuniLabel{ia} '(' ROIFiles(ia).name '),'  ...
             'Please check the coordinates on the CT!'])
-        return
     end
     tempCoor = [tempCoor;gdata.allMRICoor{ia}(1:sum(il),:)];
 end
 
+if errstop
+    dbstop
+end
 % sort all labels and cooridnates to their original orders
 newLabel = [];
 newCoor = [];
