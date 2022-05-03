@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'COHtf'
+    calculate = 'PACregion'
 end
 
 % initialize base path and toolbox
@@ -49,18 +49,18 @@ roiDist = 1; % maximum distance between electrodes and ROI voxels
 seedIndex = [1  3 7];
 searchIndex = [1 3 7];
 icontrol = [7];
-allPair = nchoosek(seedIndex,2);
+% allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
     for isearch = searchIndex
         
         %                 skip redundant pairs
-                                        if ~ismember([iseed,isearch],allPair,'rows')
-                                            continue
-                                        end
+        %                                 if ~ismember([iseed,isearch],allPair,'rows')
+        %                                     continue
+        %                                 end
         
-%         if iseed==isearch | (iseed==1&isearch==3) | (iseed==3&isearch==1)
-%             continue
-%         end
+        if iseed==isearch | (iseed==1&isearch==3) | (iseed==3&isearch==1)
+            continue
+        end
         
         % load altlas infomation for seed roi
         aparc_nii = load_nifti([basePath 'Atlas' filesep ROIAtlas{iseed}]);

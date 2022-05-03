@@ -1301,50 +1301,9 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
         end
         
         
-        %% section5-3: calculate electrode averaged power %%
-        %%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'avgpow')
-            
-            freqRange = [3 8];
-            timeWin = [0 1];
-            %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            datafile = dir([resultPath 'TFR' filesep subname filesep 'FreqData.mat']);
-            load([datafile.folder filesep datafile.name]);
-            
-            
-            % extract frequency points of intrest
-            freqPoint = find(freqM.freq>=freqRange(1) & freqM.freq<=freqRange(2));
-            timePoint = find(freqM.time>=timeWin(1) & freqM.time<=timeWin(2));
-            % normalise power
-            tmpPowerM = abs(freqM.fourierspctrm(:,:,freqPoint,:)).^2;
-            tmpPowerS = abs(freqS.fourierspctrm(:,:,freqPoint,:)).^2;
-            meanPower = (nanmean(nanmean(tmpPowerM,1),4)+nanmean(nanmean(tmpPowerS,1),4))/2;
-            
-            metricM = tmpPowerM./repmat(meanPower,size(tmpPowerM,1),1,1,size(tmpPowerM,4));
-            metricM = nanmean(nanmean(metricM(:,:,:,timePoint),3),4);
-            
-            metricS = tmpPowerS./repmat(meanPower,size(tmpPowerS,1),1,1,size(tmpPowerS,4));
-            metricS = nanmean(nanmean(metricS(:,:,:,timePoint),3),4);
-            
-            [~,pIvS] = ttest2(metricM,metricS);
-            
-            Para.time = timeWin;
-            Para.freq = freqRange;
-            
-            if ~exist([resultPath calculate filesep ROIAtlas{1}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'],'file')
-                mkdir([resultPath calculate filesep ROIAtlas{1}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'])
-            end
-            save([resultPath calculate filesep ROIAtlas{1}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz' filesep subname], ...
-                'metricM','metricS','pIvS','Para');
-            
-            
-        end
-        
-        
         %% section6: calculate PAC (bestPAC) %%
         %%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'PACold')
+        if strcmp(calculate,'bestPAC')
             
             % calculation parameters
             timeWin = [0 1];
@@ -1627,14 +1586,14 @@ for iatlas = [1,3,7]%[1,3,7,8]%1:numel(ROIIndex) %[1,3,7,8,9]
             cfg.toi = 'all';
             %                 cfg.width = 4;
             cfg.taper = 'hanning';
-            cfg.t_ftimwin = 4./cfg.foi;
+            cfg.t_ftimwin = 2./cfg.foi;
             cfg.keeptrials = 'yes';
             ft_warning off
             freqLow    = ft_freqanalysis(cfg, rerefData);
             
             cfg.channel = ROIelec;
-            cfg.foi          = [60:5:90];
-            cfg.t_ftimwin = 4./cfg.foi;
+            cfg.foi          = [60:5:100];
+            cfg.t_ftimwin = 2./cfg.foi;
             freqHigh    = ft_freqanalysis(cfg, rerefData);
             
             % extract each movie's start time point (with first camera change excluded)
