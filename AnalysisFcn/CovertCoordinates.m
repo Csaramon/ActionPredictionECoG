@@ -222,6 +222,25 @@ end
 MNICoordinate = mni_info.vox2ras*[volCoordinate ones(size(volCoordinate,1),1)]';
 MNICoordinate = MNICoordinate(1:3,:)';
 save([ROIpathname '/elec.mat'],'MNICoordinate','newCoor','newLabel')
+
+%%
+load([ROIpathname '/elec.mat'])
+uniLabel = {};
+for ich = 1:numel(newLabel)
+    nameInd = find(newLabel{ich}=='-');
+    uniLabel{ich} = newLabel{ich}(1:nameInd-1);
+end
+
+uniLabel = unique(uniLabel,'stable')';
+subColor = distinguishable_colors(numel(uniLabel));
+for il = 1:numel(uniLabel)
+    elecInd = strncmp(uniLabel(il),newLabel,numel(uniLabel{il}));
+    tempCoor = newCoor(elecInd,:);
+    scatter3(tempCoor(:,1),tempCoor(:,2),tempCoor(:,3),60,subColor(il,:),'fill');
+    text(tempCoor(end,1),tempCoor(end,2)+2,tempCoor(end,3)+1,uniLabel(il),'Fontsize',25,'Color',subColor(il,:))
+    
+end
+saveas(gcf,[ROIpathname '/elec3D.fig'])
 clear global
 end
 

@@ -286,7 +286,7 @@ if contains(pathname,'GrangerTF')
     tMap(tMap==0)=nan;
     pMap(pMap==0)=nan;
     
-    iind = 1:1:120;
+    iind = 1:1:252;
     % iind = 1:61;
     
     pMap = pMap(iind,:);

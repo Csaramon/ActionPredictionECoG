@@ -93,17 +93,21 @@ xlim([0 120])
 
 
 yyaxis left
-ylabel('Power (a.u.)')
+set(gca,'ycolor','k')
+ylabel('Low Frequency Power (a.u.)')
 hlowM = shadedErrorBar(Para.freq(lowFind), y2plot(1,lowFind),se2plot(1,lowFind),{'color',[255 106 106]/255,'linewidth',1,'linestyle','-'},1);
-
 hlowS = shadedErrorBar(Para.freq(lowFind), y2plot(2,lowFind), se2plot(2,lowFind),{'color',[30 144 255]/255,'linewidth',1,'linestyle','-'},1);
+hlowS.mainLine.Marker = 'none';
 
 hlowsig = plot(Para.freq(lowFind),(max(y2plot(:,lowFind),[],'all')+0.2*range(y2plot(:,lowFind),'all'))*highlight(lowFind),'-','color',[0.5 0.5 0.5],'LineWidth',2);
 hlowsigcorr = plot(Para.freq(lowFind),(max(y2plot(:,lowFind),[],'all')+0.1*range(y2plot(:,lowFind),'all'))*highlightcorr(lowFind),'-','color',[0 0 0],'LineWidth',2);
 
 yyaxis right
+set(gca,'ycolor','k')
+ylabel('High Frequency Power (a.u.)')
 hhighM = shadedErrorBar(Para.freq(highFind), y2plot(1,highFind),se2plot(1,highFind),{'color',[255 106 106]/255,'linewidth',1,'linestyle','-'},1);
 hhighS = shadedErrorBar(Para.freq(highFind), y2plot(2,highFind), se2plot(2,highFind),{'color',[30 144 255]/255,'linewidth',1,'linestyle','-'},1);
+hhighS.mainLine.Marker = 'none';
 
 hhighsig = plot(Para.freq(highFind),(max(y2plot(:,highFind),[],'all')+0.2*range(y2plot(:,highFind),'all'))*highlight(highFind),'-','color',[0.5 0.5 0.5],'LineWidth',2);
 hhighsigcorr = plot(Para.freq(highFind),(max(y2plot(:,highFind),[],'all')+0.1*range(y2plot(:,highFind),'all'))*highlightcorr(highFind),'-','color',[0 0 0],'LineWidth',2);
@@ -113,7 +117,7 @@ title(filename(1:end-4))
 xlabel('Frequency (Hz)')
 
 legend([hlowM.mainLine,hlowS.mainLine,hlowsig,hlowsigcorr], ...
-    ['Intact'],['Scrambled'],['P<0.05'],['P<0.05 (corrected)'],'box','off');
+    ['Intact'],['Scrambled'],['P<0.05'],['P<0.05 (corrected)'],'box','off','NumColumns',2);
 
 
 % plot the inlets of beta and gamma power of each participant

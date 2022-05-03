@@ -1,16 +1,16 @@
 %% plot time-frequency data after reducing dimension
 
 
-% foi  = Para.freq>60 & Para.freq<90;
+foi  = Para.freq>60 & Para.freq<90;
 % foi  = Para.freq>20 & Para.freq<30;
-% MetricM = squeeze(mean(allMetricM(:,foi,:),2));
-% MetricS = squeeze(mean(allMetricS(:,foi,:),2));
-% x2plot = Para.timePT;
+MetricM = squeeze(mean(allMetricM(:,foi,:),2));
+MetricS = squeeze(mean(allMetricS(:,foi,:),2));
+x2plot = Para.timePT;
 
-toi = Para.timePT > 0.45 & Para.timePT < 0.55;
-MetricM = squeeze(nanmean(allMetricM(:,:,toi),3));
-MetricS = squeeze(nanmean(allMetricS(:,:,toi),3));
-x2plot = Para.freq;
+% toi = Para.timePT > 0.45 & Para.timePT < 0.55;
+% MetricM = squeeze(nanmean(allMetricM(:,:,toi),3));
+% MetricS = squeeze(nanmean(allMetricS(:,:,toi),3));
+% x2plot = Para.freq;
 
 
 tMap = [];
@@ -67,6 +67,9 @@ end
 y2plot = yraw;
 se2plot = seraw;
 
+% x2plot(:,Para.freq >= 45 & Para.freq <= 55 | Para.freq >90) = nan;
+% y2plot(:,Para.freq >= 45 & Para.freq <= 55 | Para.freq >90) = nan;
+% se2plot(:,Para.freq >= 45 & Para.freq <= 55 | Para.freq >90) = nan;
 % x2plot = x2plot(2:end);
 
 % FDR  correction
