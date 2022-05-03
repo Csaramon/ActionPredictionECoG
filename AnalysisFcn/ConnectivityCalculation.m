@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'COHtf'
+    calculate = 'PACbest'
 end
 
 % initialize base path and toolbox
@@ -49,18 +49,18 @@ roiDist = 1; % maximum distance between electrodes and ROI voxels
 seedIndex = [1  3 7];
 searchIndex = [1 3 7];
 icontrol = [7];
-allPair = nchoosek(seedIndex,2);
+% allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
     for isearch = searchIndex
         
         %                 skip redundant pairs
-                                        if ~ismember([iseed,isearch],allPair,'rows')
-                                            continue
-                                        end
+        %                                         if ~ismember([iseed,isearch],allPair,'rows')
+        %                                             continue
+        %                                         end
         
-%         if iseed==isearch | (iseed==1&isearch==3) | (iseed==3&isearch==1)
-%             continue
-%         end
+        if iseed==isearch | (iseed==1&isearch==3) | (iseed==3&isearch==1)
+            continue
+        end
         
         % load altlas infomation for seed roi
         aparc_nii = load_nifti([basePath 'Atlas' filesep ROIAtlas{iseed}]);
@@ -2369,8 +2369,8 @@ for iseed = seedIndex
                             randTime = randsample(size(tmpsearchTS,2),1);
                             tmpsearchTS = [tmpsearchTS(:,randTime:end),tmpsearchTS(:,1:randTime-1)];
                             
-%                             [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
-
+                            %                             [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                            
                             nbin =20;
                             [pacdata, ~] = data2pac(tmpseedTS,tmpsearchTS,nbin);
                             for i=1:size(pacdata,1)
@@ -2389,8 +2389,8 @@ for iseed = seedIndex
                     
                     allPACM(ip,:,:) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
                     allPACS(ip,:,:)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
-%                     allPACM(ip,:,:) = elecPACM;
-%                     allPACS(ip,:,:)  = elecPACS;
+                    %                     allPACM(ip,:,:) = elecPACM;
+                    %                     allPACS(ip,:,:)  = elecPACS;
                     
                 end
                 
@@ -2419,23 +2419,25 @@ for iseed = seedIndex
             end
             
             
-            %% section5-3: calculate cross regional PAC (circlar correlation)%%
+            %% section5-3: calculate cross regional PAC (best PAC)%%
             %%%%%%%%%%%%%%%%%%%%%%%%
-            if strcmp(calculate,'cirPACregion')
+            if strcmp(calculate,'PACbest')
                 
                 % calculation parameters
-                timeWin = [0 1];
+                measure = 'mi';
+                ph_freq_vec = 2:2:30;
+                amp_freq_vec = 35:5:120;
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                if exist([dataPath subname 'LARER_trlData.mat'],'file')
-                    a = load([dataPath subname 'LARER_trlData']);
+                if exist([dataPath subname 'LARER_rerefData.mat'],'file')
+                    a = load([dataPath subname 'LARER_rerefData']);
                 end
                 c = fieldnames(a);
-                trlData = a.(c{1});
+                rerefData = a.(c{1});
                 
                 % choose seed electrodes according to MNI coordinates
-                elecposMNI = trlData.elec.elecposMNI;
+                elecposMNI = rerefData.elec.elecposMNI;
                 tempdev = pdist2(elecposMNI,seed_coordiantes);
                 [it,~] = find(tempdev <=roiDist);
                 seedElec = unique(it);
@@ -2445,25 +2447,33 @@ for iseed = seedIndex
                 [it,~] = find(tempdev <=roiDist);
                 searchElec = unique(it);
                 
-                
-                % additional preprocessing
-                cfg = [];
-                cfg.demean = 'yes';
-                cfg.detrend = 'yes';
-                
-                trlData = ft_preprocessing(cfg,trlData);
-                
                 % skip bad channels
-                badChanInd = trlData.trial{1,1}(seedElec,1)==0;
+                badChanInd = rerefData.trial{1,1}(seedElec,1)==0;
                 seedElec(badChanInd) = [];
                 
-                badChanInd = trlData.trial{1,1}(searchElec,1)==0;
+                badChanInd = rerefData.trial{1,1}(searchElec,1)==0;
                 searchElec(badChanInd) = [];
                 
                 % skip if no electrode pair
                 if ~any(seedElec) | ~any(searchElec) | isempty(setdiff(seedElec,searchElec))
                     continue
                 end
+                
+                if exist([dataPath subname '_eventdata.mat'],'file')
+                    a = load([dataPath subname '_eventdata']);
+                end
+                c = fieldnames(a);
+                camInfo = a.(c{1});
+                
+                % downsampling data and eventdata
+                cfg = [];
+                cfg.resamplefs = 500;
+                cfg.detrend         = 'yes';
+                cfg.demean         = 'yes';
+                rerefData = ft_resampledata(cfg, rerefData);
+                fs = rerefData.fsample;
+                camInfo(:,4) = num2cell(round(cell2mat(camInfo(:,4))./1000.*fs));
+                
                 
                 % remove superimposed electrodes
                 duplicateInd = intersect(searchElec,seedElec);
@@ -2476,84 +2486,86 @@ for iseed = seedIndex
                 end
                 
                 
-                % calculate single electrode PAC without shuffle
-                
-                Npair = 1;
-                allChanCmb = [];
-                allPACM = [];
-                allPACS = [];
-                % seperate conditions
-                cfg = [];
-                cfg.trials = find(trlData.trialinfo(:,1)==0);
-                trlDataM = ft_selectdata(cfg,trlData);
-                
-                cfg = [];
-                cfg.trials = find(trlData.trialinfo(:,1)==1);
-                trlDataS = ft_selectdata(cfg,trlData);
-                
-                
-                %%%%---- calculate PAC in Intact condition ---- %%%%
-                % calculate Power spectrum
-                cfg            = [];
-                cfg.output     = 'fourier';
-                cfg.method     = 'wavelet';
-                cfg.channel = seedElec;
-                cfg.foi          = [2:2:30,35:5:120]; %logspace(log10(2),log10(128),32);
-                cfg.toi = min(timeWin):0.002:max(timeWin);
-                cfg.width = 5;
-                cfg.keeptrials = 'yes';
-                
-                ft_warning off
-                freqLowM    = ft_freqanalysis(cfg, trlDataM);
-                freqLowS    = ft_freqanalysis(cfg, trlDataS);
-                
-                cfg.channel = searchElec;
-                cfg.foi          = [2:2:30,35:5:120];
-                freqHighM    = ft_freqanalysis(cfg, trlDataM);
-                freqHighS    = ft_freqanalysis(cfg, trlDataS);
-                
-                
-                for iseedElec = 1:numel(seedElec)
-                    for isearchElec =  1:numel(searchElec)
-                        allChanCmb = [allChanCmb;[seedElec(iseedElec) searchElec(isearchElec)]];
-                        [pacmat, ~] = find_pac(freqHighM, freqLowM, [iseedElec,isearchElec]);
-                        allPACM(Npair,:,:) = pacmat;
-                        
-                        %%%%---- calculate PAC in Scrambled condition ---- %%%%
-                        
-                        [pacmat, ~] = find_pac(freqHighS, freqLowS, [iseedElec,isearchElec]);
-                        allPACS(Npair,:,:) = pacmat;
-                        
-                        Npair = Npair +1;
-                        
+                %%%%---- calculate PAC ---- %%%%
+                % extract each movie's start time point (with first camera change excluded)
+                nc = 1;
+                while nc < size(camInfo,1)
+                    if camInfo{nc,3}==camInfo{nc+1,3}
+                        camInfo(nc+1,:) = [];
+                    else
+                        nc = nc+1;
                     end
                 end
                 
+                a = 1:numel(seedElec);
+                b = 1:numel(searchElec);
+                [m,n] = meshgrid(a,b);
+                pairInd = [reshape(m,[],1),reshape(n,[],1)];
+                pairIndC = parallel.pool.Constant(pairInd);
+                Fs = rerefData.fsample;
+                
+                [~, ~, freqvec_ph, freqvec_amp] = find_pac_best (rerefData.trial{1}(1,500), Fs, measure, ...
+                    rerefData.trial{1}(1,500), ph_freq_vec, amp_freq_vec);
+                
+                allPACM = zeros(size(pairInd,1),numel(freqvec_ph),numel(freqvec_amp));
+                allPACS = zeros(size(pairInd,1),numel(freqvec_ph),numel(freqvec_amp));
+                sig_mod = parallel.pool.Constant(rerefData.trial{1}(seedElec,:));
+                sig_pac = parallel.pool.Constant(rerefData.trial{1}(searchElec,:));
+                
+                parfor ip = 1:size(pairInd,1) % parfor
+                    
+                    sig_modTS = squeeze(sig_mod.Value(pairIndC.Value(ip,1),:));
+                    sig_pacTS = squeeze(sig_pac.Value(pairIndC.Value(ip,2),:));
+                    cfcdata = [];
+                    for ii = 1:size(camInfo,1)
+                        % extract data of each movie
+                        tmpseedTS = sig_modTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                        tmpsearchTS = sig_pacTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
+                        
+                        [~, pacmatZ, ~, ~] = find_pac_best (tmpsearchTS, Fs, measure, ...
+                            tmpseedTS, ph_freq_vec, amp_freq_vec);
+                        % concatenate data according to condition
+                        cfcdata(ii,:,:) = pacmatZ';
+                        
+                    end
+                    elecPACM = mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1);
+                    elecPACS = mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1);
+                    
+                    allPACM(ip,:,:) = elecPACM;
+                    allPACS(ip,:,:)  = elecPACS;
+                    
+                    
+                end
+                        
+                Npair = size(allPACM,1);
                 
                 % generate index for Subject Electrode and Trial
                 metricM = allPACM;
                 metricS = allPACS;
                 
-                elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-2]');
-                subIndexM = cat(1,subIndexM,repmat(isub,Npair-1,1));
+                elecIndexM =  cat(1,elecIndexM,[nelec:nelec+Npair-1]');
+                subIndexM = cat(1,subIndexM,repmat(isub,Npair,1));
                 
                 
-                elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-2]');
-                subIndexS = cat(1,subIndexS,repmat(isub,Npair-1,1));
+                elecIndexS = cat(1,elecIndexS,[nelec:nelec+Npair-1]');
+                subIndexS = cat(1,subIndexS,repmat(isub,Npair,1));
                 
                 % concontenate all trial responses in chosen ROI
                 allMetricM = cat(1,allMetricM,metricM);
                 allMetricS = cat(1,allMetricS,metricS);
                 
-                Para.chanCMB{isub} = allChanCmb;
-                Para.timeWin = timeWin;
-                Para.freqlow = freqHighM.freq(freqHighM.freq<=30);
-                Para.freqhigh = freqHighM.freq(freqHighM.freq>30);
-                nelec = nelec+Npair-1;
+                
+                Para.freqlow = freqvec_ph;
+                Para.freqhigh = freqvec_amp;
+                nelec = nelec+Npair;
                 
             end
             
             
+            
+            
+            
+            % subject loop
         end
         
         
@@ -3000,7 +3012,7 @@ for iseed = seedIndex
         
         %% section5: calculate cross regional PAC %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'PACregion') | strcmp(calculate,'PACmovie') | strcmp(calculate,'cirPACregion')
+        if strcmp(calculate,'PACregion') | strcmp(calculate,'PACmovie') | strcmp(calculate,'PACbest')
             CondIndexM = ones(size(subIndexM));
             CondIndexS = 2*ones(size(subIndexS));
             

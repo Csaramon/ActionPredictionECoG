@@ -1,4 +1,4 @@
-function [pacmat, pacmatSig] = find_pac (sig_pac, sig_mod, chancmb, ph_freq_vec, amp_freq_vec, time_range, shf_time, pvalue, plt)
+function [pacmat, shf_pacmat,pacmatSig] = find_pac (sig_pac, sig_mod, chancmb, ph_freq_vec, amp_freq_vec, time_range, shf_time, pvalue, plt)
 
 % default parameters
 if nargin < 2
@@ -17,7 +17,7 @@ if nargin < 6
     time_range = [-1 1];
 end
 if nargin < 7
-    shf_time = 0;
+    shf_time = 100;
 end
 if nargin < 8
     pvalue = 0.05;
