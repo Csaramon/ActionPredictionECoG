@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PACbest'
+    calculate = 'GrangerTF'
 end
 
 % initialize base path and toolbox
@@ -46,8 +46,8 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1  3 7];
-searchIndex = [1 3 7];
+seedIndex = [3];
+searchIndex = [7];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
@@ -753,7 +753,7 @@ for iseed = seedIndex
                 
                 p=0.05; % threshold for IVC
                 timeWin = 1; % unit in second
-                timeStep = 0.1; % unit in second
+                timeStep = 0.05; % unit in second
                 
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
@@ -1613,7 +1613,7 @@ for iseed = seedIndex
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'Bipolar_trlData.mat']);
+                datafile = dir([dataPath subname 'LARER_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
@@ -1703,7 +1703,7 @@ for iseed = seedIndex
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
                     %                     cfg.foilim     = [0 250]; % need equidistant frequency bins for granger method
-                    cfg.tapsmofrq  = 4;
+                    cfg.tapsmofrq  = 3;
                     %                     cfg.taper      = 'hanning';
                     cfg.keeptrials = 'yes';
                     %                     cfg.pad='nextpow2';

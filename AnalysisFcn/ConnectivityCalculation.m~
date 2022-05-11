@@ -1613,7 +1613,7 @@ for iseed = seedIndex
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'Bipolar_trlData.mat']);
+                datafile = dir([dataPath subname 'LARER_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
                 if exist([dataPath subname 'IVC.mat'],'file')
@@ -1703,7 +1703,7 @@ for iseed = seedIndex
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
                     %                     cfg.foilim     = [0 250]; % need equidistant frequency bins for granger method
-                    cfg.tapsmofrq  = 4;
+                    cfg.tapsmofrq  = 5;
                     %                     cfg.taper      = 'hanning';
                     cfg.keeptrials = 'yes';
                     %                     cfg.pad='nextpow2';
@@ -2504,11 +2504,11 @@ for iseed = seedIndex
                 pairIndC = parallel.pool.Constant(pairInd);
                 Fs = rerefData.fsample;
                 
-                [~, pacmatZ, freqvec_ph, freqvec_amp] = find_pac_best (tmpsearchTS, Fs, measure, ...
-                    tmpseedTS, ph_freq_vec, amp_freq_vec);
+                [~, ~, freqvec_ph, freqvec_amp] = find_pac_best (rerefData.trial{1}(1,500), Fs, measure, ...
+                    rerefData.trial{1}(1,500), ph_freq_vec, amp_freq_vec);
                 
-                allPACM = zeros(size(pairInd,1),numel(ph_freq_vec),numel(amp_freq_vec));
-                allPACS = zeros(size(pairInd,1),numel(ph_freq_vec),numel(amp_freq_vec));
+                allPACM = zeros(size(pairInd,1),numel(freqvec_ph),numel(freqvec_amp));
+                allPACS = zeros(size(pairInd,1),numel(freqvec_ph),numel(freqvec_amp));
                 sig_mod = parallel.pool.Constant(rerefData.trial{1}(seedElec,:));
                 sig_pac = parallel.pool.Constant(rerefData.trial{1}(searchElec,:));
                 
@@ -2522,7 +2522,7 @@ for iseed = seedIndex
                         tmpseedTS = sig_modTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                         tmpsearchTS = sig_pacTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                         
-                        [~, pacmatZ, freqvec_ph, freqvec_amp] = find_pac_best (tmpsearchTS, Fs, measure, ...
+                        [~, pacmatZ, ~, ~] = find_pac_best (tmpsearchTS, Fs, measure, ...
                             tmpseedTS, ph_freq_vec, amp_freq_vec);
                         % concatenate data according to condition
                         cfcdata(ii,:,:) = pacmatZ';

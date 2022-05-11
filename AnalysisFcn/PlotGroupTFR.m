@@ -286,8 +286,8 @@ if contains(pathname,'GrangerTF')
     tMap(tMap==0)=nan;
     pMap(pMap==0)=nan;
     
-    iind = 1:1:252;
-    % iind = 1:61;
+%     iind = 1:1:252;
+    iind = 1:size(pMap,1);
     
     pMap = pMap(iind,:);
     tMap = tMap(iind,:);
@@ -300,14 +300,14 @@ if contains(pathname,'GrangerTF')
     clim = [min(cdat(:)) max(cdat(:))];
     
     % uncorrected
-    highlight = pMap< 0.05;
+%     highlight = pMap< 0.05;
     
     % Bofforoni  correction
     % highlight = pMap< 0.05/numel(pMap);
     
     % FDR  correction
-    % [p_fdr, p_masked] = fdr(pMap, 0.05,'Parametric');
-    % highlight = p_masked;
+    [p_fdr, p_masked] = fdr(pMap, 0.05,'Parametric');
+    highlight = p_masked;
     
     % the significant voxels could be outlined with a black contour
     % plot outline
