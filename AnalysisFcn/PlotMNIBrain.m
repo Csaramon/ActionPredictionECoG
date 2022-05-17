@@ -23,16 +23,26 @@ vertices = [vertex_coords1];
 
 vertices = vox2ras*ras_tkr2vox*[vertices ones(size(vertices,1),1)]';
 vertices = vertices(1:3,:)';
+
 stereo = patch(struct(...
     'vertices', vertices, 'faces', faces), ...
     'Parent',stereoaxes, ...
     'FaceColor',[230,228,216]./255, ...
-    'FaceAlpha',0.25, ...
+    'FaceAlpha',0.15, ...
     'EdgeColor', 'none');
 
-brainLight = camlight;
+brainLight(1) = camlight(-90,0) ;
+brainLight(2) = camlight(90,0) ;
+% brainLight(3) = camlight(0,90) ;
+% brainLight(4) = camlight(0,-90) ;
+% brainLight(3) = camlight(0,0) ;
+% brainLight(4) = camlight(180,0) ;
+% brainLight(5) = camlight(0,90) ;
+% brainLight(6) = camlight(0,-90) ;
+
 view(-90,0)
-set(brainLight,'position',get(gca,'cameraPosition'))
+% set(brainLight,'position',get(gca,'cameraPosition'))
 lighting gouraud;
-material dull
+material shiny % material dull
+rotate3d on
 

@@ -39,21 +39,21 @@ for isub = [1,3,4,6,7,8,9,10]%1:numel(allsub)%[1,3,4,6,7,8,9,10]%1:numel(allsub)
     % load electrodes coordinates
     load([subPath 'FsRecon/brain3D/ft_elec.mat'])
     % project electrode to the left hemisphere
-    elec.elecposMNI(elec.elecposMNI(:,1)>0,1) = elec.elecposMNI(elec.elecposMNI(:,1)>0,1).*-1;
+    elec.MNICoordinate(elec.MNICoordinate(:,1)>0,1) = elec.MNICoordinate(elec.MNICoordinate(:,1)>0,1).*-1;
     
     for ie = respElecI'
         
-        hI(ie) = scatter3(stereoaxes,elec.elecposMNI(ie,1),elec.elecposMNI(ie,2),elec.elecposMNI(ie,3),60,[255 0 0]./255,'fill');
+        hI(ie) = scatter3(stereoaxes,elec.MNICoordinate(ie,1),elec.MNICoordinate(ie,2),elec.MNICoordinate(ie,3),60,[255 0 0]./255,'fill');
     end
     
     for ie = respElecS'
         
-        hS(ie) = scatter3(stereoaxes,elec.elecposMNI(ie,1),elec.elecposMNI(ie,2),elec.elecposMNI(ie,3),60,[0 0 255]./255,'fill');
+        hS(ie) = scatter3(stereoaxes,elec.MNICoordinate(ie,1),elec.MNICoordinate(ie,2),elec.MNICoordinate(ie,3),60,[0 0 255]./255,'fill');
     end
     
     for ie = respElecInS'
         
-        hInS(ie) = scatter3(stereoaxes,elec.elecposMNI(ie,1),elec.elecposMNI(ie,2),elec.elecposMNI(ie,3),60,[0 255 0]./255,'fill');
+        hInS(ie) = scatter3(stereoaxes,elec.MNICoordinate(ie,1),elec.MNICoordinate(ie,2),elec.MNICoordinate(ie,3),60,[0 255 0]./255,'fill');
     end
     
 end
@@ -109,21 +109,21 @@ for isub = [1,3,4,6,7,8,9,10]%1:numel(allsub)%[1,3,4,6,7,8,9,10]%1:numel(allsub)
     % load electrodes coordinates
     load([subPath 'FsRecon/brain3D/ft_elec.mat'])
     % project electrode to the left hemisphere
-    elec.elecposMNI(elec.elecposMNI(:,1)>0,1) = elec.elecposMNI(elec.elecposMNI(:,1)>0,1).*-1;
+    elec.MNICoordinate(elec.MNICoordinate(:,1)>0,1) = elec.MNICoordinate(elec.MNICoordinate(:,1)>0,1).*-1;
     
     for ie = respElecN
         
-        hN = scatter3(stereoaxes,elec.elecposMNI(ie,1),elec.elecposMNI(ie,2),elec.elecposMNI(ie,3),60,[20 202 18]./255);
+        hN = scatter3(stereoaxes,elec.MNICoordinate(ie,1),elec.MNICoordinate(ie,2),elec.MNICoordinate(ie,3),60,[20 202 18]./255);
     end
     
     for ie = respElecInS'
         
-        hInS = scatter3(stereoaxes,elec.elecposMNI(ie,1),elec.elecposMNI(ie,2),elec.elecposMNI(ie,3),60,[255 0 0]./255,'fill');
+        hInS = scatter3(stereoaxes,elec.MNICoordinate(ie,1),elec.MNICoordinate(ie,2),elec.MNICoordinate(ie,3),60,[255 0 0]./255,'fill');
     end
     
     for ie = respElecSnI'
         
-        hSnI = scatter3(stereoaxes,elec.elecposMNI(ie,1),elec.elecposMNI(ie,2),elec.elecposMNI(ie,3),60,[0 0 255]./255,'fill');
+        hSnI = scatter3(stereoaxes,elec.MNICoordinate(ie,1),elec.MNICoordinate(ie,2),elec.MNICoordinate(ie,3),60,[0 0 255]./255,'fill');
     end
     
     
@@ -167,21 +167,21 @@ for isub = 1:numel(allsub)%[1,3,4,6,7,8,9,10]%1:numel(allsub)
     % load electrodes coordinates
     load([subPath 'FsRecon/brain3D/ft_elec.mat'])
     % project electrode to the left hemisphere
-    elec.elecposMNI(elec.elecposMNI(:,1)>0,1) = elec.elecposMNI(elec.elecposMNI(:,1)>0,1).*-1;
+    elec.MNICoordinate(elec.MNICoordinate(:,1)>0,1) = elec.MNICoordinate(elec.MNICoordinate(:,1)>0,1).*-1;
     
     for ie = respElecN
         
-        hN = scatter3(stereoaxes,elec.elecposMNI(ie,1),elec.elecposMNI(ie,2),elec.elecposMNI(ie,3),30,[20 202 18]./255);
+        hN = scatter3(stereoaxes,elec.MNICoordinate(ie,1),elec.MNICoordinate(ie,2),elec.MNICoordinate(ie,3),30,[20 202 18]./255);
     end
     
     for ie = respElecInS'
         
-        hInS = scatter3(stereoaxes,elec.elecposMNI(ie,1),elec.elecposMNI(ie,2),elec.elecposMNI(ie,3),60,[255 0 0]./255,'fill');
+        hInS = scatter3(stereoaxes,elec.MNICoordinate(ie,1),elec.MNICoordinate(ie,2),elec.MNICoordinate(ie,3),60,[255 0 0]./255,'fill');
     end
     
     for ie = respElecSnI'
         
-        hSnI = scatter3(stereoaxes,elec.elecposMNI(ie,1),elec.elecposMNI(ie,2),elec.elecposMNI(ie,3),60,[0 0 255]./255,'fill');
+        hSnI = scatter3(stereoaxes,elec.MNICoordinate(ie,1),elec.MNICoordinate(ie,2),elec.MNICoordinate(ie,3),60,[0 0 255]./255,'fill');
     end
     
     
@@ -292,21 +292,21 @@ for p=[0.005,0.0025] % threshold for power difference
         % load electrodes coordinates
         load([subPath 'FsRecon/brain3D/ft_elec.mat'])
         % project electrode to the left hemisphere
-        elec.elecposMNI(elec.elecposMNI(:,1)>0,1) = elec.elecposMNI(elec.elecposMNI(:,1)>0,1).*-1;
+        elec.MNICoordinate(elec.MNICoordinate(:,1)>0,1) = elec.MNICoordinate(elec.MNICoordinate(:,1)>0,1).*-1;
         
         for ie = respElecN
             
-            hN = scatter3(stereoaxes,elec.elecposMNI(ie,1),elec.elecposMNI(ie,2),elec.elecposMNI(ie,3),60,[20 202 18]./255);
+            hN = scatter3(stereoaxes,elec.MNICoordinate(ie,1),elec.MNICoordinate(ie,2),elec.MNICoordinate(ie,3),60,[20 202 18]./255);
         end
         
         for ie = respElecInS'
             
-            hInS = scatter3(stereoaxes,elec.elecposMNI(ie,1),elec.elecposMNI(ie,2),elec.elecposMNI(ie,3),60,[255 0 0]./255,'fill');
+            hInS = scatter3(stereoaxes,elec.MNICoordinate(ie,1),elec.MNICoordinate(ie,2),elec.MNICoordinate(ie,3),60,[255 0 0]./255,'fill');
         end
         
         for ie = respElecSnI'
             
-            hSnI = scatter3(stereoaxes,elec.elecposMNI(ie,1),elec.elecposMNI(ie,2),elec.elecposMNI(ie,3),60,[0 0 255]./255,'fill');
+            hSnI = scatter3(stereoaxes,elec.MNICoordinate(ie,1),elec.MNICoordinate(ie,2),elec.MNICoordinate(ie,3),60,[0 0 255]./255,'fill');
         end
         
         
@@ -346,20 +346,20 @@ nelec = 0;
 he = [];
 for isub = 1:numel(allsub)
 
-    elecposMNI = importdata([dataPath allsub{isub} '/FsRecon/brain3D/MNI152_coordinates_ras.txt']);
-    elecposMNI = elecposMNI(:,1:3);
+    MNICoordinate = importdata([dataPath allsub{isub} '/FsRecon/brain3D/MNI152_coordinates_ras.txt']);
+    MNICoordinate = MNICoordinate(:,1:3);
     % choose electrode in ROI
-    elecposMNI = intersect(elecposMNI,Para.elecposMNI,'rows');
-    elecposMNI(elecposMNI(:,1)>0,1) = elecposMNI(elecposMNI(:,1)>0,1).*-1;
-    if ~isempty(elecposMNI)
-        for ie = 1:size(elecposMNI,1)
+    MNICoordinate = intersect(MNICoordinate,Para.MNICoordinate,'rows');
+    MNICoordinate(MNICoordinate(:,1)>0,1) = MNICoordinate(MNICoordinate(:,1)>0,1).*-1;
+    if ~isempty(MNICoordinate)
+        for ie = 1:size(MNICoordinate,1)
             
-            he(nsub) = scatter3(stereoaxes,elecposMNI(ie,1),elecposMNI(ie,2),elecposMNI(ie,3),60,subColor(isub,:),'fill');
+            he(nsub) = scatter3(stereoaxes,MNICoordinate(ie,1),MNICoordinate(ie,2),MNICoordinate(ie,3),60,subColor(isub,:),'fill');
         end
         
         lengendName(nsub) = allsub(isub);
         nsub = nsub +1;
-        nelec = nelec + size(elecposMNI,1);
+        nelec = nelec + size(MNICoordinate,1);
     end
 end
 
@@ -385,25 +385,97 @@ nelec = 0;
 he = [];
 for isub = 1:numel(allsub)
 
-    elecposMNI = importdata([dataPath allsub{isub} '/FsRecon/brain3D/MNI152_coordinates_ras.txt']);
-    elecposMNI = elecposMNI(:,1:3);
+    MNICoordinate = importdata([dataPath allsub{isub} '/FsRecon/brain3D/MNI152_coordinates_ras.txt']);
+    MNICoordinate = MNICoordinate(:,1:3);
     % choose electrode in ROI
-    elecposMNI(elecposMNI(:,1)>0,1) = elecposMNI(elecposMNI(:,1)>0,1).*-1;
-    if ~isempty(elecposMNI)
-        for ie = 1:size(elecposMNI,1)
+    MNICoordinate(MNICoordinate(:,1)>0,1) = MNICoordinate(MNICoordinate(:,1)>0,1).*-1;
+    if ~isempty(MNICoordinate)
+        for ie = 1:size(MNICoordinate,1)
             
-            he(nsub) = scatter3(stereoaxes,elecposMNI(ie,1),elecposMNI(ie,2),elecposMNI(ie,3),60,subColor(isub,:),'fill');
+            he(nsub) = scatter3(stereoaxes,MNICoordinate(ie,1),MNICoordinate(ie,2),MNICoordinate(ie,3),60,subColor(isub,:),'fill');
         end
         
         lengendName(nsub) = allsub(isub);
         nsub = nsub +1;
-        nelec = nelec + size(elecposMNI,1);
+        nelec = nelec + size(MNICoordinate,1);
     end
 end
 
  legend(he,lengendName,'Location','northeast')
 
-   
+%% plot all electrodes on MNI brain （SEEG in Dutch patient）
+
+dataPath = ['~/Desktop/'];
+
+PlotMNIBrain
+
+allsub = {'P19','P20','P23','P24','P25','P27','P29','P30'}; % all sub
+
+
+subColor = distinguishable_colors(numel(allsub));
+% load in electrodes coordinates
+lengendName = {};
+nsub = 1;
+nelec = 0;
+he = [];
+
+% Load T1 mask
+aparc_nii = load_nifti([basePath 'Atlas' filesep 'T1excInsula.nii']);
+aparc_vol = round(aparc_nii.vol);
+allroi_index = [];
+temp_indx = find(aparc_vol==1);
+allroi_index = [allroi_index;temp_indx];
+
+% atlas parcellation coordinates
+[tx,ty,tj] = ind2sub(size(aparc_vol),allroi_index);
+ras_coordiantes = aparc_nii.vox2ras*[[tx,ty,tj] ones(size(tx,1),1)]';
+ras_coordiantes = ras_coordiantes(1:3,:)';
+T1coordiantes = ras_coordiantes;
+        
+fid=fopen([MNI152path '/mri/tempcoordiantes.txt'],'w+');
+
+    
+for isub = 1:numel(allsub)
+
+    load([dataPath allsub{isub} '/brain3D/elec.mat']);
+    % choose electrode in ROI
+    tempdev = pdist2(MNICoordinate,T1coordiantes);
+    [it,~] = find(tempdev <=1);
+    MNICoordinate = MNICoordinate(unique(it),:);
+    
+    % Project all electrodes to the left hemisphere
+        MNICoordinate(MNICoordinate(:,1)>0,1) = MNICoordinate(MNICoordinate(:,1)>0,1).*-1;
+    
+    if ~isempty(MNICoordinate)
+        for ie = 1:size(MNICoordinate,1)
+            fprintf(fid,'%f\t%f\t%f\t%f\n',MNICoordinate(ie,:),str2num(allsub{isub}(2:end)));
+            % plot electrode as 3D sphere
+            d = 1;
+            [xx,yy,zz] = sphere(20);
+            fvc = surf2patch(d*xx+MNICoordinate(ie,1),d*yy+MNICoordinate(ie,2),d*zz+MNICoordinate(ie,3));
+            he(nsub) = patch(fvc,'FaceColor',subColor(isub,:),'FaceAlpha',1,'EdgeAlpha', 0);
+            
+            % plot electrode as 3D scatter dot
+%             he(nsub) = scatter3(stereoaxes,MNICoordinate(ie,1),MNICoordinate(ie,2),MNICoordinate(ie,3),60,subColor(isub,:),'fill');
+        end
+        
+        lengendName(nsub) = allsub(isub);
+        nsub = nsub +1;
+        nelec = nelec + size(MNICoordinate,1);
+    end
+end
+
+fclose(fid);
+
+gen_roi2warp_code = ['. ~/.zshrc;' ...
+    '3dUndump -master ' MNI152path '/mri/T1.nii -orient LPI ' ...
+    '-srad 2 -xyz -prefix ' MNI152path '/mri/AllelecMNI152.nii ' ...
+    MNI152path '/mri/tempcoordiantes.txt'];
+unix(gen_roi2warp_code)
+                
+ legend(he,lengendName,'Location','northeast')
+
+      
 %% plot specifc regions
 
  % precentral

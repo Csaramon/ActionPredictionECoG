@@ -25,5 +25,5 @@ ylabel('Coherence (a.u.)')
 xlabel('Frequency (Hz)')
 xlim([0 120])
     
-saveas(gcf,[pathname 'sub' num2str(isub) 'COH'])
+% saveas(gcf,[pathname 'sub' num2str(isub) 'COH'])
 end
