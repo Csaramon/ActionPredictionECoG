@@ -105,6 +105,7 @@ if contains(pathname,'PAC')
         pMap = pMap';
     end
     
+    
     freqhigh = [30 150];
     freqlow = [2 30];
     fhInd = Para.freqhigh >= freqhigh(1) & Para.freqhigh <= freqhigh(2);
@@ -118,7 +119,7 @@ if contains(pathname,'PAC')
 
     if exist('allCutOffFreq','var')
         cutOffFreq = mean(allCutOffFreq);
-        for ifreqh = Para.freqhigh
+        for ifreqh = unique(Para.freqhigh)
             ifreql = Para.freqlow>ceil(cutOffFreq(ifreqh));
             pMap(Para.freqhigh==ifreqh,ifreql) = nan;
             cdat(Para.freqhigh==ifreqh,ifreql) = nan;

@@ -40,7 +40,7 @@ title(filename(1:end-4))
 xlabel('Time relative to camera change (sec)')
 ylabel('ERP (μV)')
 xlim([-0.5 1])
-ylim([ -3 3])
+% ylim([ -3 3])
 plot(get(gca,'xlim'),[0 0],'k--')
 plot([0 0],get(gca,'ylim'),'k--')
 

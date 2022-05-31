@@ -50,7 +50,7 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
 
-for iatlas = [3 7]%1:numel(ROIIndex) %[1,3,7,8,9]
+for iatlas = [1 3 7]%1:numel(ROIIndex) %[1,3,7,8,9]
     
     % load altlas infomation
     aparc_nii = load_nifti([basePath 'Atlas' filesep ROIAtlas{iatlas}]);
@@ -1917,7 +1917,7 @@ for iatlas = [3 7]%1:numel(ROIIndex) %[1,3,7,8,9]
             cfg.output     = 'fourier';
             cfg.method     = 'mtmconvol';
             cfg.channel = ROIelec;
-            cfg.foi          = mean([gammaPeakM,gammaPeakS]);
+            cfg.foi          = mean([betaPeakM,betaPeakS]);
             cfg.toi = 'all';
             cfg.taper = 'hanning';
             cfg.t_ftimwin = 2./cfg.foi;
@@ -2455,7 +2455,7 @@ for iatlas = [3 7]%1:numel(ROIIndex) %[1,3,7,8,9]
         if ~exist([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4)],'file')
             mkdir([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4)])
         end
-        save([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ROIText{iatlas}], ...
+        save([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ROIText{iatlas} num2str(inpara)], ...
             'lmeTBL','tMap','pMap','y2plot','se2plot','yraw','seraw','Para');
         
     end

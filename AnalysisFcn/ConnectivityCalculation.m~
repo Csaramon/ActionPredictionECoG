@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PACmovieind'
+    calculate = 'COHtf'
 end
 
 % initialize base path and toolbox
@@ -46,8 +46,8 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1 3 7];
-searchIndex = [1 3 7];
+seedIndex = [3];
+searchIndex = [1];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
@@ -1702,7 +1702,7 @@ for iseed = seedIndex
                     cfg            = [];
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
-                    cfg.foilim     = [0 250]; % need equidistant frequency bins for granger method
+                                        cfg.foilim     = [0 250]; % need equidistant frequency bins for granger method
                     cfg.tapsmofrq  = 4;
                     %                     cfg.taper      = 'hanning';
                     cfg.keeptrials = 'yes';
@@ -2387,10 +2387,10 @@ for iseed = seedIndex
                         shfPACS(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
                     end
                     
-                    %                     allPACM(ip,:,:) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
-                    %                     allPACS(ip,:,:)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
-                    allPACM(ip,:,:) = elecPACM;
-                    allPACS(ip,:,:)  = elecPACS;
+%                     allPACM(ip,:,:) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
+%                     allPACS(ip,:,:)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
+                                        allPACM(ip,:,:) = elecPACM;
+                                        allPACS(ip,:,:)  = elecPACS;
                     
                 end
                 
@@ -2536,7 +2536,7 @@ for iseed = seedIndex
                     
                     
                 end
-                
+                        
                 Npair = size(allPACM,1);
                 
                 % generate index for Subject Electrode and Trial
@@ -2562,12 +2562,12 @@ for iseed = seedIndex
             end
             
             
-            %% section5-4: calculate cross regional PAC (movie-wise individual frequency) %%
+              %% section5-4: calculate cross regional PAC (movie-wise individual frequency) %%
             %%%%%%%%%%%%%%%%%%%%%%%%
             if strcmp(calculate,'PACmovieind')
                 
                 % calculation parameters
-                numShuffle = 500;
+                numShuffle = 1;
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2630,7 +2630,7 @@ for iseed = seedIndex
                 [gammaPeakM]=getpeak(powM(gammaInd),a.Para.freq(gammaInd),log10(60),log10(90),0);
                 [gammaPeakS]=getpeak(powS(gammaInd),a.Para.freq(gammaInd),log10(60),log10(90),0);
                 
-                
+            
                 if exist([dataPath subname '_eventdata.mat'],'file')
                     a = load([dataPath subname '_eventdata']);
                 end
@@ -2732,12 +2732,21 @@ for iseed = seedIndex
                         tmpseedTS = seedTS(camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                         tmpsearchTS = searchTS(camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                         
-                        [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                                                [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
                         
-                        [MI,distKL]=modulationIndex(angle(tmpseedTS),abs(tmpsearchTS));
-                        
+%                         nbin =20;
+%                         [pacdata, ~] = data2pac(tmpseedTS,tmpsearchTS,nbin);
+%                         mi = zeros(size(pacdata,1),size(pacdata,2));
+%                         Q =ones(nbin,1)/nbin;
+%                         for i=1:size(pacdata,1)
+%                             for j=1:size(pacdata,2)
+%                                 P = squeeze(pacdata(i,j,:))/ nansum(pacdata(i,j,:));  % normalized distribution
+%                                 % KL distance
+%                                 mi(i,j) = nansum(P.* log2(P./Q))./log2(nbin);
+%                             end
+%                         end
                         % concatenate data according to condition
-                        cfcdata(ii) = mvldata;
+                        cfcdata(ii) = mvl;
                         
                     end
                     elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0)));
@@ -2754,26 +2763,31 @@ for iseed = seedIndex
                             % extract data of each movie
                             tmpseedTS = seedTS(camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                             tmpsearchTS = searchTS(camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
-                            randTime = randsample(size(tmpsearchTS,1),1);
+                            randTime = randsample(size(tmpsearchTS,1));
                             tmpsearchTS = [tmpsearchTS(randTime:end);tmpsearchTS(1:randTime-1)];
                             
-                            [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                                                        [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
                             
-                        [MI,distKL]=modulationIndex(angle(tmpseedTS),abs(tmpsearchTS));
-                        
+%                             nbin =20;
+%                             [pacdata, ~] = data2pac(tmpseedTS,tmpsearchTS,nbin);
+%                             for i=1:size(pacdata,1)
+%                                 for j=1:size(pacdata,2)
+%                                     P = squeeze(pacdata(i,j,:))/ nansum(pacdata(i,j,:));  % normalized distribution
+%                                     % KL distance
+%                                     mi(i,j) = nansum(P.* log2(P./Q))./log2(nbin);
+%                                 end
+%                             end
                             % concatenate data according to condition
-                            cfcdata(ii) = mvldata;
-                            
-                            
+                            cfcdata(ii) = mvl;
                         end
                         shfPACM(ishf) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0)));
                         shfPACS(ishf) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1)));
                     end
                     
-                                        allPACM(ip) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
-                                        allPACS(ip)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
-%                     allPACM(ip) = elecPACM;
-%                     allPACS(ip)  = elecPACS;
+%                     allPACM(ip,:,:) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
+%                     allPACS(ip,:,:)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
+                                        allPACM(ip) = elecPACM;
+                                        allPACS(ip)  = elecPACS;
                     
                 end
                 
@@ -3312,60 +3326,14 @@ for iseed = seedIndex
             
         end
         
-        %% section5-2: calculate cross regional PAC (individual frequency)%%
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        if strcmp(calculate,'PACmovieind')
-            CondIndexM = ones(size(subIndexM));
-            CondIndexS = 2*ones(size(subIndexS));
-            
-            tMap = zeros(1);
-            pMap = zeros(1);
-            y2plot = zeros(2,1);
-            se2plot = zeros(2,1);
-            yraw = zeros(2,1);
-            seraw = zeros(2,1);
-            
-            
-            % point wise LME
-            
-            frameDataM = double(allMetricM);
-            % skip nan point
-            if ~any(frameDataM,'all')
-                continue
-            end
-            frameDataS = double(allMetricS);
-            
-            
-            lmeTBL = table([frameDataM;frameDataS],[CondIndexM;CondIndexS],[subIndexM;subIndexS], ...
-                [elecIndexM;elecIndexS], 'VariableNames',{'Y','Cond','Sub','Elec'});
-            lmeTBL.Cond = nominal(lmeTBL.Cond);
-            lmeTBL.Sub = nominal(lmeTBL.Sub);
-            lmeTBL.Elec = nominal(lmeTBL.Elec);
-            lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');
-            [~,~,lmeStats] = fixedEffects(lmeStruct);
-            tMap = lmeStats.tStat(2);
-            pMap = lmeStats.pValue(2);
-            [randBeta,~,~] = randomEffects(lmeStruct);
-            Z = designMatrix(lmeStruct,'random');
-            Ycorr = lmeTBL.Y-Z*randBeta;
-            obsVal1 = Ycorr(lmeTBL.Cond=='1');
-            obsVal2 = Ycorr(lmeTBL.Cond=='2');
-            y2plot = [mean(obsVal1);mean(obsVal2)];
-            se2plot = [std(obsVal1)./sqrt(numel(obsVal1));std(obsVal2)./sqrt(numel(obsVal2))];
-            rawVal1 = lmeTBL.Y(lmeTBL.Cond=='1');
-            rawVal2 = lmeTBL.Y(lmeTBL.Cond=='2');
-            yraw = [mean(rawVal1);mean(rawVal2)];
-            seraw = [std(rawVal1)./sqrt(numel(rawVal1));std(rawVal2)./sqrt(numel(rawVal2))];
-            
-            
-            if ~exist([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)],'file')
-                mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4)])
-            end
-            save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) filesep ...
-                ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot', ...
-                'yraw','seraw','Para');
-            
-        end
+        
+        %             %% Save results
+        %                         if ~exist([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'],'file')
+        %                     mkdir([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz'])
+        %                 end
+        %                 save([resultPath calculate filesep ROIAtlas{iseed}(1:end-4) num2str(freqRange(1)) '_' num2str(freqRange(2)) 'Hz' ...
+        %                     filesep ROIText{iseed} '_'  ROIText{isearch}],'lmeTBL','tMap','pMap','y2plot','se2plot','yraw','seraw','Para');
+        
         
         
     end

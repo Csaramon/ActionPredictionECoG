@@ -7,7 +7,7 @@
 % MetricS = squeeze(mean(allMetricS(:,foi,:),2));
 % x2plot = Para.timePT;
 
-toi = Para.timePT > 0.35 & Para.timePT < 0.45;
+toi = Para.timePT > 0.45 & Para.timePT < 0.55;
 MetricM = squeeze(nanmean(allMetricM(:,:,toi),3));
 MetricS = squeeze(nanmean(allMetricS(:,:,toi),3));
 x2plot = Para.freq;
