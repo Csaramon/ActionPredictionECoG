@@ -50,7 +50,7 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
 
-for iatlas = [3 7]%1:numel(ROIIndex) %[1,3,7,8,9]
+for iatlas = [7]%1:numel(ROIIndex) %[1,3,7,8,9]
     
     % load altlas infomation
     aparc_nii = load_nifti([basePath 'Atlas' filesep ROIAtlas{iatlas}]);
@@ -1822,7 +1822,7 @@ for iatlas = [3 7]%1:numel(ROIIndex) %[1,3,7,8,9]
         if strcmp(calculate,'PACind')
             
             % calculation parameters
-            numShuffle = 1;
+            numShuffle = 500;
             
             %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1971,8 +1971,8 @@ for iatlas = [3 7]%1:numel(ROIIndex) %[1,3,7,8,9]
                         % extract data of each movie
                         tmpseedTS = seedTS(camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                         tmpsearchTS = searchTS(camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
-                        randTime = randsample(size(tmpsearchTS,1),1);
-                        tmpsearchTS = [tmpsearchTS(randTime:end);tmpsearchTS(1:randTime-1)];
+                        randTime = randperm(numel(tmpsearchTS));
+                        tmpsearchTS = tmpsearchTS(randTime);
                         
                         [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
                         % concatenate data according to condition
@@ -1982,10 +1982,10 @@ for iatlas = [3 7]%1:numel(ROIIndex) %[1,3,7,8,9]
                     shfPACS(ishf) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1)));
                 end
                 
-                %                 allPACM(ip,:,:) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
-                %                 allPACS(ip,:,:)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
-                allPACM(ip) = elecPACM;
-                allPACS(ip)  = elecPACS;
+                                allPACM(ip) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
+                                allPACS(ip)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
+%                 allPACM(ip) = elecPACM;
+%                 allPACS(ip)  = elecPACS;
                 
             end
             

@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PACmovieind'
+    calculate = 'PACmovie'
 end
 
 % initialize base path and toolbox
@@ -46,8 +46,8 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1 3 7];
-searchIndex = [1 3 7];
+seedIndex = [1];
+searchIndex = [7];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
 for iseed = seedIndex
@@ -2200,7 +2200,7 @@ for iseed = seedIndex
             if strcmp(calculate,'PACmovie')
                 
                 % calculation parameters
-                numShuffle = 1;
+                numShuffle = 0;
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2337,19 +2337,16 @@ for iseed = seedIndex
                         
                         %                         [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
                         
-                        nbin =20;
-                        [pacdata, ~] = data2pac(tmpseedTS,tmpsearchTS,nbin);
-                        mi = zeros(size(pacdata,1),size(pacdata,2));
-                        Q =ones(nbin,1)/nbin;
-                        for i=1:size(pacdata,1)
-                            for j=1:size(pacdata,2)
-                                P = squeeze(pacdata(i,j,:))/ nansum(pacdata(i,j,:));  % normalized distribution
-                                % KL distance
-                                mi(i,j) = nansum(P.* log2(P./Q))./log2(nbin);
+                        for i = 1:size(tmpseedTS,1)
+                            for j = 1:size(tmpsearchTS,1)
+                                %                                 [MI(i,j),~]=modulationIndex(angle(tmpseedTS(i,:)),abs(tmpsearchTS(j,:)));
+                                [r,~,~] = glmCFC(angle(tmpseedTS(i,:)),abs(tmpsearchTS(j,:)),12);
+                                
                             end
                         end
+                        
                         % concatenate data according to condition
-                        cfcdata(ii,:,:) = mi;
+                        cfcdata(ii,:,:) = r;
                         
                     end
                     elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
@@ -2370,18 +2367,15 @@ for iseed = seedIndex
                             tmpsearchTS = [tmpsearchTS(:,randTime:end),tmpsearchTS(:,1:randTime-1)];
                             
                             %                             [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
-                            
-                            nbin =20;
-                            [pacdata, ~] = data2pac(tmpseedTS,tmpsearchTS,nbin);
-                            for i=1:size(pacdata,1)
-                                for j=1:size(pacdata,2)
-                                    P = squeeze(pacdata(i,j,:))/ nansum(pacdata(i,j,:));  % normalized distribution
-                                    % KL distance
-                                    mi(i,j) = nansum(P.* log2(P./Q))./log2(nbin);
+                            for i = 1:size(tmpseedTS,1)
+                                for j = 1:size(tmpsearchTS,1)
+                                    %                                 [MI(i,j),~]=modulationIndex(angle(tmpseedTS(i,:)),abs(tmpsearchTS(j,:)));
+                                    [r,~,~] = glmCFC(angle(tmpseedTS(i,:)),abs(tmpsearchTS(j,:)),12);
+                                    
                                 end
                             end
                             % concatenate data according to condition
-                            cfcdata(ii,:,:) = mi;
+                            cfcdata(ii,:,:) = r;
                         end
                         shfPACM(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
                         shfPACS(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
@@ -2567,7 +2561,7 @@ for iseed = seedIndex
             if strcmp(calculate,'PACmovieind')
                 
                 % calculation parameters
-                numShuffle = 500;
+                numShuffle = 1;
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2732,12 +2726,13 @@ for iseed = seedIndex
                         tmpseedTS = seedTS(camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                         tmpsearchTS = searchTS(camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                         
-                        [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                        %                         [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
                         
-                        [MI,distKL]=modulationIndex(angle(tmpseedTS),abs(tmpsearchTS));
+                        %                         [MI,distKL]=modulationIndex(angle(tmpseedTS),abs(tmpsearchTS));
                         
+                        [r, ~, ~] = glmCFC(angle(tmpseedTS), abs(tmpsearchTS), 10, 'AIC');
                         % concatenate data according to condition
-                        cfcdata(ii) = mvldata;
+                        cfcdata(ii) = r;
                         
                     end
                     elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0)));
@@ -2759,8 +2754,8 @@ for iseed = seedIndex
                             
                             [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
                             
-                        [MI,distKL]=modulationIndex(angle(tmpseedTS),abs(tmpsearchTS));
-                        
+                            [MI,distKL]=modulationIndex(angle(tmpseedTS),abs(tmpsearchTS));
+                            
                             % concatenate data according to condition
                             cfcdata(ii) = mvldata;
                             
@@ -2770,10 +2765,10 @@ for iseed = seedIndex
                         shfPACS(ishf) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1)));
                     end
                     
-                                        allPACM(ip) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
-                                        allPACS(ip)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
-%                     allPACM(ip) = elecPACM;
-%                     allPACS(ip)  = elecPACS;
+%                     allPACM(ip) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
+%                     allPACS(ip)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
+                                        allPACM(ip) = elecPACM;
+                                        allPACS(ip)  = elecPACS;
                     
                 end
                 
