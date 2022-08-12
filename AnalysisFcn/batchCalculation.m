@@ -2,7 +2,7 @@ function varargout = batchCalculation(calculate,inpara)
 
 tic;
 if nargin < 1
-    calculate = 'PACind'
+    calculate = 'PACmovie'
 end
 
 % initialize base path and toolbox
@@ -43,14 +43,14 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 % ROIText = {'V1','V2','V3','V4','V5'};
 
 % visual ROIS
-% ROIIndex = {[1:4],[4:8],[9:12],[13:14],[25:26],[35:46],[31:34]};
+% ROIIndex = {[1:4],[4:8],[9:12],[13:14],[25:26],[11:12]};
 % ROIAtlas = repmat({'perc_VTPM.nii'},numel(ROIIndex),1);
-% ROIText = {'V1','V2','V3','V4','V5','IPS','V3d'};
+% ROIText = {'V1','V2','V3','V4','V5','V3d'};
 
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
 
-for iatlas = [7]%1:numel(ROIIndex) %[1,3,7,8,9]
+for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
     
     % load altlas infomation
     aparc_nii = load_nifti([basePath 'Atlas' filesep ROIAtlas{iatlas}]);
@@ -65,7 +65,7 @@ for iatlas = [7]%1:numel(ROIIndex) %[1,3,7,8,9]
     elseif ndims(aparc_vol) == 4
         %%%------ For probabilistic map ------%%%
         aparc_vol = squeeze(sum(aparc_vol(:,:,:,ROIIndex{iatlas}),4));
-        allroi_index = find(aparc_vol>=20);  % minimum probability
+        allroi_index = find(aparc_vol>=15);  % minimum probability
     end
     
     % atlas parcellation coordinates
@@ -1548,7 +1548,7 @@ for iatlas = [7]%1:numel(ROIIndex) %[1,3,7,8,9]
             
         end
         
-        %% section6: calculate PAC (circular) %%
+        %% section6-2: calculate PAC (circular) %%
         %%%%%%%%%%%%%%%%%%%%%%%%
         if strcmp(calculate,'PACold--')
             
@@ -1721,14 +1721,14 @@ for iatlas = [7]%1:numel(ROIIndex) %[1,3,7,8,9]
             cfg.toi = 'all';
             %                 cfg.width = 4;
             cfg.taper = 'hanning';
-            cfg.t_ftimwin = 2./cfg.foi;
+            cfg.t_ftimwin = 2*ones(1,numel(cfg.foi));%2./cfg.foi;
             cfg.keeptrials = 'yes';
             ft_warning off
             freqLow    = ft_freqanalysis(cfg, rerefData);
             
             cfg.channel = ROIelec;
             cfg.foi          = [60:5:100];
-            cfg.t_ftimwin = 2./cfg.foi;
+            cfg.t_ftimwin = 2*ones(1,numel(cfg.foi));%2./cfg.foi;
             freqHigh    = ft_freqanalysis(cfg, rerefData);
             
             % extract each movie's start time point (with first camera change excluded)
@@ -1757,11 +1757,15 @@ for iatlas = [7]%1:numel(ROIIndex) %[1,3,7,8,9]
                     tmpseedTS = seedTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                     tmpsearchTS = searchTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                     
-                    [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
-                    % concatenate data according to condition
-                    cfcdata(ii,:,:) = mvldata;
+%                     [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+%                     cfcdata(ii,:,:) = mvldata;
                     
+                    [aacdata] = find_aac(tmpseedTS,tmpsearchTS);
+                    cfcdata(ii,:,:) = aacdata;
+
+
                 end
+                % separate data according to condition
                 elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
                 elecPACS = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
                 
@@ -1779,10 +1783,14 @@ for iatlas = [7]%1:numel(ROIIndex) %[1,3,7,8,9]
                         randTime = randsample(size(tmpsearchTS,2),1);
                         tmpsearchTS = [tmpsearchTS(:,randTime:end),tmpsearchTS(:,1:randTime-1)];
                         
-                        [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
-                        % concatenate data according to condition
-                        cfcdata(ii,:,:) = mvldata;
+%                         [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+%                         cfcdata(ii,:,:) = mvldata;
+                        
+                        [aacdata] = find_aac(tmpseedTS,tmpsearchTS);
+                        cfcdata(ii,:,:) = aacdata;
+                    
                     end
+                    % separate data according to condition
                     shfPACM(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
                     shfPACS(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
                 end
@@ -1817,7 +1825,7 @@ for iatlas = [7]%1:numel(ROIIndex) %[1,3,7,8,9]
         end
         
         
-        %% section6-3: calculate  PAC (movie-wise individual frequency) %%
+        %% section6-4: calculate  PAC (movie-wise individual frequency) %%
         %%%%%%%%%%%%%%%%%%%%%%%%
         if strcmp(calculate,'PACind')
             

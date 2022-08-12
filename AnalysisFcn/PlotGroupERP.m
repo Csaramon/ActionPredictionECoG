@@ -394,40 +394,62 @@ foi  = Para.freq>20 & Para.freq<30;
 metricM = mean(allMetricM(:,foi,14),2);
 metricS = mean(allMetricS(:,foi,14),2);
 
+% linear fit
 y = metricM;
 x = allCoordinates(:,3);
 p=polyfit(x,y,1);
 yfit=polyval(p,x);
 
+ys = metricS;
+x = allCoordinates(:,3);
+ps=polyfit(x,ys,1);
+yfits=polyval(ps,x);
+
+% plot correlation 
 [R,P] = corrcoef(x,y);
-[RS,PS] = corrcoef(allCoordinates(:,3),metricS);
+[Rs,Ps] = corrcoef(x,ys);
+R = round(R*100)/100;P = round(P*100)/100;
+Rs = round(Rs*100)/100;Ps = round(Ps*100)/100;
 
 hf1 = figure;
-hp1 = plot(y,x,'*'); hold on;
-hp2 = plot(yfit,x,'k-');
+hp1 = plot(y,x,'*','color',[255 106 106]/255); hold on;
+hp1s = plot(ys,x,'*','color',[30 144 255]/255); hold on;
+hp2 = plot(yfit,x,'-','color',[255 106 106]/255);
+hp2s = plot(yfits,x,'-','color',[30 144 255]/255);
 
-xlabel('Coherence')
+
+xlabel('Beta Coherence')
 ylabel('Z coordinates (mm)')
 
-legend(hp2,['r = ' num2str(R(1,2)) ', p= ' num2str(P(1,2))])
+legend([hp2,hp2s],['Intact: r = ' num2str(R(1,2)) ', p= ' num2str(P(1,2))],['Scrambled: r = ' num2str(Rs(1,2)) ', p= ' num2str(Ps(1,2))])
 
-rs = [];
-ps = [];
+% plot time variant correlation
 for itime = 1:size(allMetricM,3)
     metricM = mean(allMetricM(:,foi,itime),2);
     metricS = mean(allMetricS(:,foi,itime),2);
     y = metricM;
+    ys = metricS;
     x = allCoordinates(:,3);
     [R,P] = corrcoef(x,y);
-    rs(itime) = R(1,2);
-    ps(itime) = P(1,2);
+    rts(itime) = R(1,2);
+    pts(itime) = P(1,2);
+    
+    [Rs,Ps] = corrcoef(x,ys);
+    rts2(itime) = Rs(1,2);
+    pts2(itime) = Ps(1,2);
 end
-highlight =ones(size(ps));
-highlight(ps>=0.05) = nan;
+highlight =ones(size(pts));
+highlight(pts>=0.05) = nan;
+highlight2 =ones(size(pts2));
+highlight2(pts2>=0.05) = nan;
 
 hf2 = figure;
-plot(Para.timePT,rs);hold on;
-hsig = plot(Para.timePT,max(rs)+0.3*range(rs)*highlight,'k*');
+hl1 = plot(Para.timePT,rts,'color',[255 106 106]/255);hold on;
+hl1s = plot(Para.timePT,rts2,'color',[30 144 255]/255);
+hsig = plot(Para.timePT,max(rts)+0.3*range(rts)*highlight,'k*');
+hsigs = plot(Para.timePT,max(rts2)+0.3*range(rts2)*highlight2,'k*');
+
+legend([hl1,hl1s],['Intact'],['Scrambled'])
 
 xlim([-0.5 1])
 xlabel('Time relative to camera change')
@@ -435,6 +457,7 @@ ylabel('Correlation coefficient')
 
 % save the figure to data location
 saveas(hf1,[pathname filename(1:end-4)])
+saveas(hf2,[pathname filename(1:end-4) 'temporal'])
 %% plot multivariate granger causality
 
 clear;

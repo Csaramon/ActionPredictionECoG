@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PACmovie'
+    calculate = 'PACmovieind'
 end
 
 % initialize base path and toolbox
@@ -916,17 +916,17 @@ for iseed = seedIndex
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                datafile = dir([dataPath subname 'LAR_trlData.mat']);
+                datafile = dir([dataPath subname 'LARER_trlData.mat']);
                 load([datafile.folder filesep datafile.name]);
                 
-                if exist([dataPath subname 'IVC.mat'],'file')
-                    load([dataPath subname 'IVC']);
-                end
-                
-                respElecInd = find(IVC.Intact.theta(:,2)<p | IVC.Intact.alpha(:,2)<p | IVC.Intact.beta(:,2)<p | ...
-                    IVC.Intact.lgamma(:,2)<p | IVC.Intact.hgamma(:,2)<p | IVC.Scamble.theta(:,2)<p | ...
-                    IVC.Scamble.alpha(:,2)<p | IVC.Scamble.beta(:,2)<p | IVC.Scamble.lgamma(:,2)<p | IVC.Scamble.hgamma(:,2)<p);
-                
+%                 if exist([dataPath subname 'IVC.mat'],'file')
+%                     load([dataPath subname 'IVC']);
+%                 end
+%                 
+%                 respElecInd = find(IVC.Intact.theta(:,2)<p | IVC.Intact.alpha(:,2)<p | IVC.Intact.beta(:,2)<p | ...
+%                     IVC.Intact.lgamma(:,2)<p | IVC.Intact.hgamma(:,2)<p | IVC.Scamble.theta(:,2)<p | ...
+%                     IVC.Scamble.alpha(:,2)<p | IVC.Scamble.beta(:,2)<p | IVC.Scamble.lgamma(:,2)<p | IVC.Scamble.hgamma(:,2)<p);
+%                 
                 % choose seed electrodes according to MNI coordinates
                 elecposMNI = trlData.elec.elecposMNI;
                 tempdev = pdist2(elecposMNI,seed_coordiantes);
@@ -2270,14 +2270,14 @@ for iseed = seedIndex
                 cfg.toi = 'all';
                 %                 cfg.width = 4;
                 cfg.taper = 'hanning';
-                cfg.t_ftimwin = 2./cfg.foi;
+                cfg.t_ftimwin = 1*ones(1,numel(cfg.foi));%2./cfg.foi;
                 cfg.keeptrials = 'yes';
                 ft_warning off
                 freqLow    = ft_freqanalysis(cfg, rerefData);
                 
                 cfg.channel = searchElec;
                 cfg.foi          = [35:5:100];
-                cfg.t_ftimwin = 2./cfg.foi;
+                cfg.t_ftimwin = 1*ones(1,numel(cfg.foi));%2./cfg.foi;
                 freqHigh    = ft_freqanalysis(cfg, rerefData);
                 
                 % calculate fourier spectrum using hilbert
@@ -2337,18 +2337,19 @@ for iseed = seedIndex
                         
                         %                         [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
                         
-                        for i = 1:size(tmpseedTS,1)
-                            for j = 1:size(tmpsearchTS,1)
-                                %                                 [MI(i,j),~]=modulationIndex(angle(tmpseedTS(i,:)),abs(tmpsearchTS(j,:)));
-                                [r,~,~] = glmCFC(angle(tmpseedTS(i,:)),abs(tmpsearchTS(j,:)),12);
-                                
-                            end
-                        end
+%                         for i = 1:size(tmpseedTS,1)
+%                             for j = 1:size(tmpsearchTS,1)
+%                                 %                                 [MI(i,j),~]=modulationIndex(angle(tmpseedTS(i,:)),abs(tmpsearchTS(j,:)));
+%                                 [r(i,j),~,~] = glmCFC(angle(tmpseedTS(i,:)),abs(tmpsearchTS(j,:)),12);
+%                                 
+%                             end
+%                         end
                         
-                        % concatenate data according to condition
+[r] = find_aac(tmpseedTS,tmpsearchTS);
                         cfcdata(ii,:,:) = r;
                         
                     end
+                    % separate data according to condition
                     elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
                     elecPACS = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
                     
@@ -2367,16 +2368,19 @@ for iseed = seedIndex
                             tmpsearchTS = [tmpsearchTS(:,randTime:end),tmpsearchTS(:,1:randTime-1)];
                             
                             %                             [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
-                            for i = 1:size(tmpseedTS,1)
-                                for j = 1:size(tmpsearchTS,1)
-                                    %                                 [MI(i,j),~]=modulationIndex(angle(tmpseedTS(i,:)),abs(tmpsearchTS(j,:)));
-                                    [r,~,~] = glmCFC(angle(tmpseedTS(i,:)),abs(tmpsearchTS(j,:)),12);
-                                    
-                                end
-                            end
-                            % concatenate data according to condition
+%                             for i = 1:size(tmpseedTS,1)
+%                                 for j = 1:size(tmpsearchTS,1)
+%                                     %                                 [MI(i,j),~]=modulationIndex(angle(tmpseedTS(i,:)),abs(tmpsearchTS(j,:)));
+%                                     [r(i,j),~,~] = glmCFC(angle(tmpseedTS(i,:)),abs(tmpsearchTS(j,:)),12);
+%                                     
+%                                 end
+%                             end
+                            
+                            [r] = find_aac(tmpseedTS,tmpsearchTS);
+
                             cfcdata(ii,:,:) = r;
                         end
+                        % separate data according to condition
                         shfPACM(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
                         shfPACS(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1,:,:),1));
                     end
@@ -2561,7 +2565,7 @@ for iseed = seedIndex
             if strcmp(calculate,'PACmovieind')
                 
                 % calculation parameters
-                numShuffle = 1;
+                numShuffle = 0;
                 
                 %%%%%%%%%%%%%%% load data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2728,11 +2732,11 @@ for iseed = seedIndex
                         
                         %                         [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
                         
-                        %                         [MI,distKL]=modulationIndex(angle(tmpseedTS),abs(tmpsearchTS));
+                                                [MI,distKL]=modulationIndex(angle(tmpseedTS),abs(tmpsearchTS));
                         
-                        [r, ~, ~] = glmCFC(angle(tmpseedTS), abs(tmpsearchTS), 10, 'AIC');
+%                         [r, ~, ~] = glmCFC(angle(tmpseedTS), abs(tmpsearchTS), 10, 'AIC');
                         % concatenate data according to condition
-                        cfcdata(ii) = r;
+                        cfcdata(ii) = MI;
                         
                     end
                     elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0)));
@@ -2752,12 +2756,12 @@ for iseed = seedIndex
                             randTime = randsample(size(tmpsearchTS,1),1);
                             tmpsearchTS = [tmpsearchTS(randTime:end);tmpsearchTS(1:randTime-1)];
                             
-                            [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+%                             [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
                             
                             [MI,distKL]=modulationIndex(angle(tmpseedTS),abs(tmpsearchTS));
                             
                             % concatenate data according to condition
-                            cfcdata(ii) = mvldata;
+                            cfcdata(ii) = MI;
                             
                             
                         end
