@@ -409,10 +409,18 @@ dataPath = ['~/Desktop/'];
 
 PlotMNIBrain
 
-allsub = {'P19','P20','P23','P24','P25','P27','P29','P30'}; % all sub
+allsub = {'A','B','C','D','E','F','G'}; % all sub excluding P27
 
 
-subColor = distinguishable_colors(numel(allsub));
+% subColor = distinguishable_colors(numel(allsub));
+subColor = [204, 2, 2;...
+    85, 147, 3;...
+    6, 6, 204;...
+    5, 175, 221;...
+     112, 42, 3;...
+     226, 220, 5;...
+     255, 128, 0]./255;
+ 
 % load in electrodes coordinates
 lengendName = {};
 nsub = 1;
@@ -420,35 +428,54 @@ nelec = 0;
 he = [];
 
 % Load T1 mask
-aparc_nii = load_nifti([basePath 'Atlas' filesep 'T1excInsula.nii']);
-aparc_vol = round(aparc_nii.vol);
-allroi_index = [];
-temp_indx = find(aparc_vol==1);
-allroi_index = [allroi_index;temp_indx];
+% aparc_nii = load_nifti([basePath 'Atlas' filesep 'T1excInsula.nii']);
+% aparc_vol = round(aparc_nii.vol);
+% allroi_index = [];
+% temp_indx = find(aparc_vol==1);
+% allroi_index = [allroi_index;temp_indx];
+% % atlas parcellation coordinates
+% [tx,ty,tj] = ind2sub(size(aparc_vol),allroi_index);
+% ras_coordiantes = aparc_nii.vox2ras*[[tx,ty,tj] ones(size(tx,1),1)]';
+% ras_coordiantes = ras_coordiantes(1:3,:)';
+% T1coordiantes = ras_coordiantes;
 
-% atlas parcellation coordinates
-[tx,ty,tj] = ind2sub(size(aparc_vol),allroi_index);
-ras_coordiantes = aparc_nii.vox2ras*[[tx,ty,tj] ones(size(tx,1),1)]';
-ras_coordiantes = ras_coordiantes(1:3,:)';
-T1coordiantes = ras_coordiantes;
+% Load anatomy atlas
+aparc_nii = load_nifti([basePath 'Atlas' filesep 'fsHammers_mith.nii']);
+anatomy_vol = round(aparc_nii.vol);
+load([basePath 'Atlas' filesep 'Hammers_mith.mat']);
+Labels = [{'Unknown'};Labels];
+
+
         
 fid=fopen([MNI152path '/mri/tempcoordiantes.txt'],'w+');
 
-    
+    allRegion = {};
 for isub = 1:numel(allsub)
 
     load([dataPath allsub{isub} '/brain3D/elec.mat']);
     % choose electrode in ROI
-    tempdev = pdist2(MNICoordinate,T1coordiantes);
-    [it,~] = find(tempdev <=1);
-    MNICoordinate = MNICoordinate(unique(it),:);
+%     tempdev = pdist2(MNICoordinate,T1coordiantes);
+%     [it,~] = find(tempdev <=1);
+%     MNICoordinate = MNICoordinate(unique(it),:);
+    
+    VOLCoordinate = aparc_nii.vox2ras\[MNICoordinate ones(size(MNICoordinate,1),1)]';
+    VOLCoordinate = round(VOLCoordinate(1:3,:))';
     
     % Project all electrodes to the left hemisphere
-        MNICoordinate(MNICoordinate(:,1)>0,1) = MNICoordinate(MNICoordinate(:,1)>0,1).*-1;
+%         MNICoordinate(MNICoordinate(:,1)>0,1) = MNICoordinate(MNICoordinate(:,1)>0,1).*-1;
     
     if ~isempty(MNICoordinate)
         for ie = 1:size(MNICoordinate,1)
-            fprintf(fid,'%f\t%f\t%f\t%f\n',MNICoordinate(ie,:),str2num(allsub{isub}(2:end)));
+             tempInd = anatomy_vol(VOLCoordinate(ie,1)-3:VOLCoordinate(ie,1)+3,VOLCoordinate(ie,2)-3:VOLCoordinate(ie,2)+3,...
+                 VOLCoordinate(ie,3)-3:VOLCoordinate(ie,3)+3);
+           tempInd(tempInd==0) = nan;
+           if any(tempInd(:))
+             elecRegion = Labels(1+mode(tempInd(:)));
+           else
+               elecRegion = Labels(1);
+           end
+           allRegion = [allRegion;elecRegion];
+            fprintf(fid,'%s\t%f\t%f\t%f\t%s\n',allsub{isub},MNICoordinate(ie,:),elecRegion{1});
             % plot electrode as 3D sphere
             d = 1;
             [xx,yy,zz] = sphere(20);
@@ -475,7 +502,28 @@ unix(gen_roi2warp_code)
                 
  legend(he,lengendName,'Location','northeast')
 
-      
+ allRegionLR = allRegion;
+for ir = 1:numel(allRegion)
+    if strcmp(allRegion{ir}(end-1:end),' L') | strcmp(allRegion{ir}(end-1:end),' R')
+    allRegion{ir}(end-1:end) = [];
+    end
+end
+uniRegion = unique(allRegion);
+regionCount = zeros(numel(uniRegion),2);
+
+for ir = 1:numel(allRegionLR)
+    if any(strcmp(allRegionLR{ir},uniRegion))
+        regionCount(strcmp(allRegionLR{ir},uniRegion),1) = regionCount(strcmp(allRegionLR{ir},uniRegion),1)+1;
+        regionCount(strcmp(allRegionLR{ir},uniRegion),2) = nan;
+    else
+        if any(strcmp(allRegionLR{ir}(1:end-2),uniRegion)) & strcmp(allRegionLR{ir}(end-1:end),' L')
+                    regionCount(strcmp(allRegionLR{ir}(1:end-2),uniRegion),1) = regionCount(strcmp(allRegionLR{ir}(1:end-2),uniRegion),1)+1;
+        elseif any(strcmp(allRegionLR{ir}(1:end-2),uniRegion)) & strcmp(allRegionLR{ir}(end-1:end),' R')
+            regionCount(strcmp(allRegionLR{ir}(1:end-2),uniRegion),2) = regionCount(strcmp(allRegionLR{ir}(1:end-2),uniRegion),2)+1;
+        end
+    end
+end
+
 %% plot specifc regions
 
  % precentral

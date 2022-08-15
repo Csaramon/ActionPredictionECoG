@@ -1,0 +1,116 @@
+1     L Precentral Gyrus             0     0     255   0    
+2     RPrecentral Gyrus              255   0     0     0    
+3     L Superior Frontal Gyrus       0     255   0     0    
+4     R Superior Frontal Gyrus       0     0     44    0    
+5     L Superior Orbital Gyrus       255   26    185   0    
+6     R Superior Orbital Gyrus       255   211   0     0    
+7     L Middle Frontal Gyrus         0     88    0     0    
+8     R Middle Frontal Gyrus         132   132   255   0    
+9     L Middle Orbital Gyrus         158   79    70    0    
+10    R Middle Orbital Gyrus         0     255   193   0    
+11    L IFG (p. Opercularis)         0     132   149   0    
+12    R IFG (p. Opercularis)         0     0     123   0    
+13    L IFG (p. Triangularis)        149   211   79    0    
+14    R IFG (p. Triangularis)        246   158   220   0    
+15    L IFG (p. Orbitalis)           211   18    255   0    
+16    R IFG (p. Orbitalis)           123   26    106   0    
+17    L Rolandic Operculum           246   18    97    0    
+18    R Rolandic Operculum           255   193   132   0    
+19    L posterior-medial frontal     35    35    9     0    
+20    R posterior-medial frontal     141   167   123   0    
+21    L Olfactory cortex             246   132   9     0    
+22    R Olfactory cortex             132   114   0     0    
+23    L Superior Medial Gyrus        114   246   255   0    
+24    R Superior Medial Gyrus        158   193   255   0    
+25    L Mid Orbital Gyrus            114   97    123   0    
+26    R Mid Orbital Gyrus            158   0     0     0    
+27    L Rectal Gyrus                 0     79    255   0    
+28    R Rectal Gyrus                 0     70    149   0    
+29    L Insula Lobe                  211   255   0     0    
+30    R Insula Lobe                  185   79    211   0    
+31    L ACC                          62    0     26    0    
+32    R ACC                          237   255   176   0    
+33    L MCC                          255   123   97    0    
+34    R MCC                          70    255   123   0    
+35    L PCC                          18    167   97    0    
+36    R PCC                          211   167   167   0    
+37    L Hippocampus                  211   79    132   0    
+38    R Hippocampus                  106   0     193   0    
+39    L ParaHippocampal Gyrus        44    97    70    0    
+40    R ParaHippocampal Gyrus        0     149   246   0    
+41    L Amygdala                     9     62    79    0    
+42    R Amygdala                     167   88    9     0    
+43    L Calcarine Gyrus              114   97    62    0    
+44    R Calcarine Gyrus              9     149   0     0    
+45    L Cuneus                       158   106   185   0    
+46    R Cuneus                       255   255   114   0    
+47    L Linual Gyrus                 167   246   202   0    
+48    R Linual Gyrus                 149   176   185   0    
+49    L Superior Occipital Gyrus     176   176   9     0    
+50    R Superior Occipital Gyrus     44    0     79    0    
+51    L Middle Occipital Gyrus       0     202   255   0    
+52    R Middle Occipital Gyrus       79    35    0     0    
+53    L Inferior Occipital Gyrus     0     185   167   0    
+54    R Inferior Occipital Gyrus     158   0     53    0    
+55    L Fusiform Gyrus               79    123   176   0    
+56    R Fusiform Gyrus               26    70    193   0    
+57    L Postcentral Gyrus            88    211   0     0    
+58    R Postcentral Gyrus            114   149   53    0    
+59    L Superior Parietal Lobule     229   167   53    0    
+60    R Superior Parietal Lobule     246   141   149   0    
+61    L Inferior Parietal Lobule     106   18    141   0    
+62    R Inferior Parietal Lobule     229   97    193   0    
+63    L SupraMarginal Gyrus          237   211   255   0    
+64    R SupraMarginal Gyrus          158   255   158   0    
+65    L Angular Gyrus                255   79    246   0    
+66    R Angular Gyrus                149   97    255   0    
+67    L Precuneus                    193   185   97    0    
+68    R Precuneus                    237   44    53    0    
+69    L Paracentral Lobule           176   106   132   0    
+70    R Paracentral Lobule           70    44    88    0    
+71    L Caudate Nucleus              185   132   88    0    
+72    R Caudate Nucleus              141   9     255   0    
+73    L Putamen                      70    79    0     0    
+74    R Putamen                      220   211   176   0    
+75    L Pallidum                     229   149   255   0    
+76    R Pallidum                     0     0     9     0    
+77    L Thalamus                     97    62    62    0    
+78    R Thalamus                     237   0     132   0    
+79    L Heschls Gyrus                176   0     149   0    
+80    R Heschls Gyrus                106   0     0     0    
+81    L Superior Temporal Gyrus      185   167   255   0    
+82    R Superior Temporal Gyrus      167   149   193   0    
+83    L Temporal Pole                132   44    79    0    
+84    R Temporal Pole                114   123   114   0    
+85    L Middle Temporal Gyrus        220   70    0     0    
+86    R Middle Temporal Gyrus        9     53    0     0    
+87    L Medial Temporal Pole         149   202   123   0    
+88    R Medial Temporal Pole         0     18    211   0    
+89    L Inferior Temporal Gyrus      185   237   255   0    
+90    R Inferior Temporal Gyrus      88    62    149   0    
+91    L Cerebelum (Crus 1)           70    132   70    0    
+92    R Cerebelum (Crus 1)           176   255   79    0    
+93    L Cerebelum (Crus 2)           70    202   88    0    
+94    R Cerebelum (Crus 2)           229   88    106   0    
+95    L Cerebelum (III)              237   141   70    0    
+96    R Cerebelum (III)              123   79    18    0    
+97    L Cerebelum (IV-V)             97    114   202   0    
+98    R Cerebelum (IV-V)             0     255   237   0    
+99    L Cerebelum (VI)               79    149   132   0    
+100   R Cerebelum (VI)               185   0     202   0    
+101   L Cerebelum (VII)              255   220   114   0    
+102   R Cerebelum (VII)              18    35    185   0    
+103   L Cerebelum (VIII)             167   0     106   0    
+104   R Cerebelum (VIII)             158   114   106   0    
+105   L Cerebelum (IX)               26    185   202   0    
+106   R Cerebelum (IX)               0     44    35    0    
+107   L Cerebelum (X)                149   141   79    0    
+108   R Cerebelum (X)                176   211   9     0    
+109   Cerebellar Vermis (1/2)        185   70    53    0    
+110   Cerebellar Vermis (3)          0     114   255   0    
+111   Cerebellar Vermis (4/5)        255   246   0     0    
+112   Cerebellar Vermis (6)          97    167   202   0    
+113   Cerebellar Vermis (7)          88    211   158   0    
+114   Cerebellar Vermis (8)          114   70    193   0    
+115   Cerebellar Vermis (9)          141   202   185   0    
+116   Cerebellar Vermis (10)         18    53    97    0    
