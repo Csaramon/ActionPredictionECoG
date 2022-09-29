@@ -194,6 +194,7 @@ if contains(pathname,'PAC')
     
 end
 
+
 %% plot time frequency Coherence
 
 if contains(pathname,'COHtf') | contains(pathname,'COHtrl')
