@@ -1,0 +1,18 @@
+LETTERS[1:26]
+coln<-LETTERS[1:26]
+coln
+coln[1:4]
+coln[1:40]
+coln[1:40]
+coln[2]<-LETTERS[1:26]
+colnc[2]<-LETTERS[1:26]
+ls
+pwd
+library(R.matlab)
+tmpMat <- readMat('tmp.mat'）
+tmpMat <- readMat("/Users/qinchaoyi/Documents/ActionPredictionECoG/AnalysisFcn/tmp.mat"）
+tmpMat <- readMat("/Users/qinchaoyi/Documents/ActionPredictionECoG/AnalysisFcn/tmp.mat"）
+tmpMat <- readMat("/Users/qinchaoyi/Documents/ActionPredictionECoG/AnalysisFcn/tmp.mat"）
+tmpMat <- readMat("/Users/qinchaoyi/Documents/ActionPredictionECoG/AnalysisFcn/tmp.mat"）
+tmpMat <- readMat("/Users/qinchaoyi/Desktop/testdatab.mat"）
+tmpMat <- readMat("/Users/qinchaoyi/Desktop/testdatab.mat"）
