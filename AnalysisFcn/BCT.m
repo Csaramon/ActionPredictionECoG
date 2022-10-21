@@ -27,20 +27,27 @@ if strcmpi(computer,'PCWIN64')
     else
         error('Unable to find R in default location, please specify your own path to R')
     end
-    [~,cmdResult] = system(['Rscript test.r ' mfilepath 'tmp.mat "' Hypo '"']);
+    [~,cmdResult] = system(['Rscript BCT.R ' mfilepath 'tmp.mat "' Hypo '"']);
 elseif strcmpi(computer,'MACI64')
     [~,cmdResult] = unix(['. ~/.bashrc;. ~/.profile;. ~/.zshrc;' ...
         'export Hypo="' Hypo '";'...
-        'Rscript test.r ' mfilepath 'tmp.mat $Hypo']);
+        'Rscript BCT.R ' mfilepath 'tmp.mat $Hypo']);
 elseif strcmpi(computer,'GLNXA64')
-    [~,cmdResult] = system(['Rscript test.r ' mfilepath 'tmp.mat "' Hypo '"']);
+    if isempty(Hypo)
+        [~,cmdResult] = system(['Rscript BCT.R ' mfilepath 'tmp.mat']);
+    else
+        [~,cmdResult] = system(['export Hypo="' Hypo '";'...
+            'Rscript BCT.R ' mfilepath 'tmp.mat "' Hypo '"']);
+    end
 end
+% delete tmp data file
 delete([mfilepath 'tmp.mat'])
 
+% get the original output from R
 TestInd = strfind(cmdResult,'Bayesian hypothesis test');
 BF.Output = cmdResult(TestInd(1):end);
 
-% Format a bit of the output for future use
+% Format a bit of the output for other purpose
 aa = strsplit(BF.Output,'\n')';
 PrStartInd = find(strcmp('Posterior probabilities:',aa),1);
 PrEndInd = find(strcmp('Bayesian hypothesis test',aa),1,'last');
