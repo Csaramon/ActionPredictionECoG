@@ -7,7 +7,7 @@ function BF = BCT(Dat,Hypo)
 %                to separate multiple hypotheses
 %                
 if nargin < 2
-    Hypo = [];
+    Hypo = ['X1_with_X2 > X1_with_X3 > 0'];
 end
 if nargin < 1
     warning('No input data! A result based on random matrix will be generated.')
@@ -20,12 +20,16 @@ mfilepath = strrep(P,mfilename,'');
 % Create a temporary matrix for R script
 save([mfilepath 'tmp.mat'],'Dat','-v6')
 
+% set up and run R in terminal
 if strcmpi(computer,'PCWIN64')
-    addpath('C:\Users\qin2\Documents\MATLAB\toolbox')
-    addpath('C:\Users\qin2\Documents\MATLAB\toolbox\fieldtrip-20210418')
-    basePath = 'C:\Users\qin2\Documents\ActionPredictionECoG\';
+    if exist('C:\Program Files\R\R-4.2.1\bin\Rscript.exe','file')
+    setenv('PATH', 'C:\Program Files\R\R-4.2.1\bin\') % default path for R, change it for your own path
+    else
+        error('Unable to find R in default location, please specify your own path to R')
+    end
+    [~,cmdResult] = system(['Rscript test.r ' mfilepath 'tmp.mat "' Hypo '"']);
 elseif strcmpi(computer,'MACI64')
-[~,cmdResult] = unix(['. ~/.bashrc;. ~/.zshrc;' ...
+[~,cmdResult] = unix(['. ~/.bashrc;. ~/.profile;. ~/.zshrc;' ...
     'export Hypo="' Hypo '";'...
     'Rscript test.r ' mfilepath 'tmp.mat $Hypo']);
 elseif strcmpi(computer,'GLNXA64')
