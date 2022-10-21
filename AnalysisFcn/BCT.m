@@ -5,9 +5,9 @@ function BF = BCT(Dat,Hypo)
 % Hypo: Hypothesis to test in the format of 'X1_with_X2 > X1_with_X3 > 0'
 %                in which X1...Xn represent the Nth variable, use semicolon
 %                to separate multiple hypotheses
-%                
+%
 if nargin < 2
-    Hypo = ['X1_with_X2 > X1_with_X3 > 0'];
+    Hypo = [];
 end
 if nargin < 1
     warning('No input data! A result based on random matrix will be generated.')
@@ -23,19 +23,17 @@ save([mfilepath 'tmp.mat'],'Dat','-v6')
 % set up and run R in terminal
 if strcmpi(computer,'PCWIN64')
     if exist('C:\Program Files\R\R-4.2.1\bin\Rscript.exe','file')
-    setenv('PATH', 'C:\Program Files\R\R-4.2.1\bin\') % default path for R, change it for your own path
+        setenv('PATH', 'C:\Program Files\R\R-4.2.1\bin\') % default path for R, change it for your own path
     else
         error('Unable to find R in default location, please specify your own path to R')
     end
     [~,cmdResult] = system(['Rscript test.r ' mfilepath 'tmp.mat "' Hypo '"']);
 elseif strcmpi(computer,'MACI64')
-[~,cmdResult] = unix(['. ~/.bashrc;. ~/.profile;. ~/.zshrc;' ...
-    'export Hypo="' Hypo '";'...
-    'Rscript test.r ' mfilepath 'tmp.mat $Hypo']);
+    [~,cmdResult] = unix(['. ~/.bashrc;. ~/.profile;. ~/.zshrc;' ...
+        'export Hypo="' Hypo '";'...
+        'Rscript test.r ' mfilepath 'tmp.mat $Hypo']);
 elseif strcmpi(computer,'GLNXA64')
-    addpath('/data00/Chaoyi/ActionPredictionECoG/')
-    addpath('/data00/Chaoyi/toolbox/fieldtrip-20210418/')
-    basePath = '/data00/Chaoyi/ActionPredictionECoG/';
+    [~,cmdResult] = system(['Rscript test.r ' mfilepath 'tmp.mat "' Hypo '"']);
 end
 delete([mfilepath 'tmp.mat'])
 
