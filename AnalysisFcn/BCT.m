@@ -27,17 +27,17 @@ if strcmpi(computer,'PCWIN64')
     else
         error('Unable to find R in default location, please specify your own path to R')
     end
-    [~,cmdResult] = system(['Rscript BCT.R ' mfilepath 'tmp.mat "' Hypo '"']);
+    [~,cmdResult] = system(['Rscript ' mfilepath 'BCT.R ' mfilepath 'tmp.mat "' Hypo '"']);
 elseif strcmpi(computer,'MACI64')
     [~,cmdResult] = unix(['. ~/.bashrc;. ~/.profile;. ~/.zshrc;' ...
         'export Hypo="' Hypo '";'...
-        'Rscript BCT.R ' mfilepath 'tmp.mat $Hypo']);
+        'Rscript ' mfilepath 'BCT.R ' mfilepath 'tmp.mat $Hypo']);
 elseif strcmpi(computer,'GLNXA64')
     if isempty(Hypo)
         [~,cmdResult] = system(['Rscript BCT.R ' mfilepath 'tmp.mat']);
     else
         [~,cmdResult] = system(['export Hypo="' Hypo '";'...
-            'Rscript BCT.R ' mfilepath 'tmp.mat "' Hypo '"']);
+            'Rscript ' mfilepath 'BCT.R ' mfilepath 'tmp.mat "' Hypo '"']);
     end
 end
 % delete tmp data file
