@@ -626,7 +626,122 @@ printeps(hf,[pathname filename(1:end-4) ...
     num2str(min(FreqRange)) '_' num2str(max(FreqRange)) 'Hz'])
 
 
-%% section5: plot freq  non-parametric granger causality
+%% section5: plot  non-parametric granger causality across freq
+
+clear ;
+
+% mid time point of choosen time window
+TimePoint = 0.4;
+
+T = which('PlotGroupERP');
+[runpath,~,~] = fileparts(T);
+[filename, pathname, filterindex] = uigetfile([runpath(1:end-11) '/Results/*.mat']);
+
+if ~filterindex
+    return
+end
+
+% load in TF Coherence data
+load([pathname filename])
+
+% Choose time point
+toi = Para.timePT > TimePoint-0.05 & Para.timePT < TimePoint+0.05;
+MetricM = squeeze(nanmean(allMetricM(:,:,toi),3));
+MetricS = squeeze(nanmean(allMetricS(:,:,toi),3));
+x2plot = Para.freq;
+
+% initialize result variable
+tMap = nan(1,size(MetricM,2));
+pMap = nan(1,size(MetricM,2));
+y2plot = nan(2,size(MetricM,2));
+se2plot = nan(2,size(MetricM,2));
+yraw = nan(2,size(MetricM,2));
+seraw = nan(2,size(MetricM,2));
+
+strlen = 0;
+for itime = 1:size(MetricM,2)
+    
+    s = ['Calculating tf point:' num2str(itime) '/' num2str(size(MetricM,2)) 'points'];
+    strlentmp = fprintf([repmat(sprintf('\b'),[1 strlen]) '%s'], s);
+    strlen = strlentmp - strlen;
+    
+    frameDataM = double(MetricM(:,itime));
+    frameDataS = double(MetricS(:,itime));
+    % skip nan point
+    if ~any(frameDataM,'all')
+        continue
+    end
+    
+    lmeTBL.Y = [frameDataM;frameDataS];
+
+    lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec)','fitmethod','reml','DummyVarCoding','effects');   
+%     lmeStruct = fitlme(lmeTBL,'Y~Cond+(1|Sub)+(1|Elec1)+(1|Elec2)+(1|Elec1:Elec2)','fitmethod','reml','DummyVarCoding','effects');
+    
+    [~,~,lmeStats] = fixedEffects(lmeStruct);
+    tMap(1,itime) = lmeStats.tStat(2);
+    pMap(1,itime) = lmeStats.pValue(2);
+    [randBeta,~,~] = randomEffects(lmeStruct);
+    Z = designMatrix(lmeStruct,'random');
+    Ycorr = lmeTBL.Y-Z*randBeta;
+    obsVal1 = Ycorr(lmeTBL.Cond=='1');
+    obsVal2 = Ycorr(lmeTBL.Cond=='2');
+    y2plot(:,itime) = [mean(obsVal1);mean(obsVal2)];
+    se2plot(:,itime) = [std(obsVal1)./sqrt(numel(obsVal1));std(obsVal2)./sqrt(numel(obsVal2))];
+    rawVal1 = lmeTBL.Y(lmeTBL.Cond=='1');
+    rawVal2 = lmeTBL.Y(lmeTBL.Cond=='2');
+    yraw(:,itime) = [mean(rawVal1);mean(rawVal2)];
+    seraw(:,itime) = [std(rawVal1)./sqrt(numel(rawVal1));std(rawVal2)./sqrt(numel(rawVal2))];
+    
+end
+
+y2plot = yraw;
+se2plot = seraw;
+
+% FDR  correction (only for 2 to 90 Hz)
+corrFreqInd = Para.freq>2 & Para.freq< 90;
+[p_fdr, p_masked] = fdr(pMap(corrFreqInd), 0.05,'Parametric');
+highlight = pMap<=p_fdr;
+
+highlight =double(highlight);
+highlight(highlight==0) = nan;
+
+% generete the main figure and specify the displaying style
+hf = figure('Units','centimeters','Position', [8 6 12 9]);
+set(gca,'linewidth',1.5,'Units','centimeters','position',[2 1.5 6 4.5])
+
+hold on
+hM = shadedErrorBar(x2plot, y2plot(1,:),se2plot(1,:),'lineProps',{'color',[255 106 106]/255,'linewidth',1.5,'linestyle','-'});
+hS = shadedErrorBar(x2plot, y2plot(2,:), se2plot(2,:),'lineProps',{'color',[30 144 255]/255,'linewidth',1.5,'linestyle','-'});
+
+hsig = plot(x2plot,(max(y2plot(:))+0.2*range(y2plot(:)))*highlight,'k-','linewidth',1.5);
+% ignore frequencies around 50Hz line noise
+rectangle('Position',[45 min(get(gca,'ylim'))+0.1*range(get(gca,'ylim')) ...
+    10 0.8*range(get(gca,'ylim'))], ...
+    'FaceColor','w','EdgeColor','w')
+
+xlim([0 90])
+plot([0,0],get(gca,'ylim'),'k--','linewidth',1);
+legend([hM.mainLine,hS.mainLine,hsig], ...
+    ['Intact'],['Scrambled'],['p<0.05 (corrected)'] ...
+    ,'box','off','NumColumns',2, ...
+    'Units','centimeters', 'Position',[2.5 4 4 1.5]);
+
+ti = find(filename=='_');
+title([filename(1:ti-1) '--' filename(ti+1:end-4) '(' ...
+    num2str(TimePoint-0.5*Para.timeWin) '-' ...
+    num2str(TimePoint+0.5*Para.timeWin) 's)'])
+xlabel('Frequency (Hz)')
+ylabel({'GC',['from ' filename(1:ti-1) ' to ' filename(ti+1:end-4)]})
+
+% save the figure to data location
+hf.Renderer = 'painters';
+set(findall(hf,'-property','FontSize'),'FontSize',10)
+set(findall(hf,'-property','FontName'),'FontName','Arial')
+set(findall(hf,'-property','FontWeight'),'FontWeight','Normal')
+printeps(hf,[pathname filename(1:end-4) num2str(TimePoint) 's'])
+
+
+%% section5-2: plot  non-parametric granger causality across time
 
 clear ;
 
@@ -710,8 +825,8 @@ hf = figure('Units','centimeters','Position', [8 6 12 9]);
 set(gca,'linewidth',1.5,'Units','centimeters','position',[2 1.5 6 4.5])
 
 hold on
-hM = shadedErrorBar(x2plot, y2plot(1,:),se2plot(1,:),{'color',[255 106 106]/255,'linewidth',1.5,'linestyle','-'},1);
-hS = shadedErrorBar(x2plot, y2plot(2,:), se2plot(2,:),{'color',[30 144 255]/255,'linewidth',1.5,'linestyle','-'},1);
+hM = shadedErrorBar(x2plot, y2plot(1,:),se2plot(1,:),'lineProps',{'color',[255 106 106]/255,'linewidth',1.5,'linestyle','-'});
+hS = shadedErrorBar(x2plot, y2plot(2,:), se2plot(2,:),'lineProps',{'color',[30 144 255]/255,'linewidth',1.5,'linestyle','-'});
 
 hsig = plot(x2plot,(max(y2plot(:))+0.2*range(y2plot(:)))*highlight,'k-','linewidth',1.5);
 % ignore frequencies around 50Hz line noise
@@ -741,9 +856,10 @@ set(findall(hf,'-property','FontWeight'),'FontWeight','Normal')
 printeps(hf,[pathname filename(1:end-4) num2str(TimePoint) 's'])
 
 
+
 %% section6: plot time PSI
 
-clear ;
+clear;
 
 % mid time point of choosen time window
 % FreqRange = [20 30];
@@ -826,8 +942,8 @@ hf = figure('Units','centimeters','Position', [8 6 8 6]);
 set(gca,'linewidth',1.5,'Units','centimeters','position',[1.5 1 6 4.5])
 hold on
 
-hM = shadedErrorBar(x2plot, y2plot(1,:),se2plot(1,:),{'color',[255 106 106]/255,'linewidth',1.5,'linestyle','-'},1);
-hS = shadedErrorBar(x2plot, y2plot(2,:), se2plot(2,:),{'color',[30 144 255]/255,'linewidth',1.5,'linestyle','-'},1);
+hM = shadedErrorBar(x2plot, y2plot(1,:),se2plot(1,:),'lineProps',{'color',[255 106 106]/255,'linewidth',1.5,'linestyle','-'});
+hS = shadedErrorBar(x2plot, y2plot(2,:), se2plot(2,:),'lineProps',{'color',[30 144 255]/255,'linewidth',1.5,'linestyle','-'});
 
 hsig = plot(x2plot,(max(y2plot(:))+0.2*range(y2plot(:)))*highlight,'k-','linewidth',1.5);
 
@@ -850,8 +966,8 @@ hf.Renderer = 'painters';
 set(findall(hf,'-property','FontSize'),'FontSize',10)
 set(findall(hf,'-property','FontName'),'FontName','Arial')
 set(findall(hf,'-property','FontWeight'),'FontWeight','Normal')
-printeps(hf,[pathname filename(1:end-4) ...
-    num2str(min(FreqRange)) '_' num2str(max(FreqRange)) 'Hz'])
+% printeps(hf,[pathname filename(1:end-4) ...
+%     num2str(min(FreqRange)) '_' num2str(max(FreqRange)) 'Hz'])
 
 
 %% plot coherence coordinates correlation
@@ -999,8 +1115,8 @@ highlight(highlight==0) = nan;
 hf = figure;
 
 hold on
-hM = shadedErrorBar(Para.freq, y2plot(1,:),se2plot(1,:),{'color',[255 106 106]/255},1);
-hS = shadedErrorBar(Para.freq, y2plot(2,:), se2plot(2,:),{'color',[30 144 255]/255},1);
+hM = shadedErrorBar(Para.freq, y2plot(1,:),se2plot(1,:),'lineProps',{'color',[255 106 106]/255});
+hS = shadedErrorBar(Para.freq, y2plot(2,:), se2plot(2,:),'lineProps',{'color',[30 144 255]/255});
 hsig = plot(Para.freq,(max(y2plot(:))+0.1*range(y2plot(:)))*highlight,'k*');
 plot([0,120],[0 0],'k--')
 legend([hM.mainLine,hS.mainLine,hsig], ...

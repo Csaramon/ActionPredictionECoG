@@ -2,7 +2,7 @@ function varargout = ConnectivityCalculation(calculate)
 
 tic
 if nargin < 1
-    calculate = 'PACmovieind'
+    calculate = 'mvgc'
 end
 
 % initialize base path and toolbox
@@ -46,7 +46,7 @@ ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
 %     'SuperiorFrontal','Cuneus','LateralOccipital'};
 roiDist = 1; % maximum distance between electrodes and ROI voxels
 
-seedIndex = [1];
+seedIndex = [3];
 searchIndex = [7];
 icontrol = [7];
 % allPair = nchoosek(seedIndex,2);
@@ -128,7 +128,6 @@ for iseed = seedIndex
         ras_coordiantes = aparc_nii.vox2ras*[[tx,ty,tj] ones(size(tx,1),1)]';
         ras_coordiantes = ras_coordiantes(1:3,:)';
         control_coordiantes = ras_coordiantes;
-        
         
         % initialize result variables
         allMetricM = [];
@@ -1420,7 +1419,7 @@ for iseed = seedIndex
                     run C:\Users\qin2\Documents\MATLAB\toolbox\tools\mvgc_v1.0\startup.m
                 end
                 % time window use to calculate
-                timeWin = [-0.5 0.5]; % unit in second
+                timeWin = [0 1]; % unit in second
                 
                 %%%%%%%%%%%%%%% load freq data %%%%%%%%%%%%%%%
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1519,8 +1518,9 @@ for iseed = seedIndex
                             
                             mvgc_calculate % calculate granger causality
                             FM = f;
-                            allGrangerM(Npair,:) = squeeze((FM(2,1,:)-FM(1,2,:))./ ...
-                                (FM(1,2,:)+FM(2,1,:)))';
+%                             allGrangerM(Npair,:) = squeeze((FM(2,1,:)-FM(1,2,:))./ ...
+%                                 (FM(1,2,:)+FM(2,1,:)))';
+                            allGrangerM(Npair,:) = squeeze(FM(2,1,:))';
                             
                             % Scrambled Condition
                             X = [];
@@ -1532,9 +1532,9 @@ for iseed = seedIndex
                             FS = f;
                             fres = size(f,3)-1;
                             freqPoints = sfreqs(fres,fs)';
-                            allGrangerS(Npair,:) = squeeze((FS(2,1,:)-FS(1,2,:))./ ...
-                                (FS(1,2,:)+FS(2,1,:)))';
-                            
+%                             allGrangerS(Npair,:) = squeeze((FS(2,1,:)-FS(1,2,:))./ ...
+%                                 (FS(1,2,:)+FS(2,1,:)))';
+                            allGrangerS(Npair,:) = squeeze(FS(2,1,:))';
                             % count for pairs of eletrodes
                             Npair = Npair + 1;
                         end
@@ -1554,8 +1554,9 @@ for iseed = seedIndex
                                 
                                 mvgc_calculate % calculate granger causality
                                 FM = f;
-                                allGrangerM(Npair,:) = squeeze((FM(2,1,:)-FM(1,2,:))./ ...
-                                    (FM(1,2,:)+FM(2,1,:)))';
+%                                 allGrangerM(Npair,:) = squeeze((FM(2,1,:)-FM(1,2,:))./ ...
+%                                     (FM(1,2,:)+FM(2,1,:)))';
+                                allGrangerM(Npair,:) = squeeze(FM(2,1,:))';
                                 
                                 % Scrambled Condition
                                 X = [];
@@ -1567,9 +1568,9 @@ for iseed = seedIndex
                                 FS = f;
                                 fres = size(f,3)-1;
                                 freqPoints = sfreqs(fres,fs)';
-                                allGrangerS(Npair,:) = squeeze((FS(2,1,:)-FS(1,2,:))./ ...
-                                    (FS(1,2,:)+FS(2,1,:)))';
-                                
+%                                 allGrangerS(Npair,:) = squeeze((FS(2,1,:)-FS(1,2,:))./ ...
+%                                     (FS(1,2,:)+FS(2,1,:)))';
+                                allGrangerS(Npair,:) = squeeze(FS(2,1,:))';
                                 % count for pairs of eletrodes
                                 Npair = Npair + 1;
                             end
@@ -1642,8 +1643,8 @@ for iseed = seedIndex
                 %                 searchElec = intersect(searchElec,respElecInd);
                 
                 cfg = [];
-                cfg.demean = 'yes';
-                cfg.detrend = 'yes';
+%                 cfg.demean = 'yes';
+%                 cfg.detrend = 'yes';
                 
                 trlData = ft_preprocessing(cfg,trlData);
                 
@@ -1702,7 +1703,7 @@ for iseed = seedIndex
                     cfg            = [];
                     cfg.output     = 'fourier';
                     cfg.method     = 'mtmfft';
-                    cfg.foilim     = [0 250]; % need equidistant frequency bins for granger method
+%                     cfg.foilim     = [0 250]; % need equidistant frequency bins for granger method
                     cfg.tapsmofrq  = 4;
                     %                     cfg.taper      = 'hanning';
                     cfg.keeptrials = 'yes';
