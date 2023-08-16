@@ -2,7 +2,7 @@ function varargout = batchCalculation(calculate,inpara)
 
 tic;
 if nargin < 1
-    calculate = 'PSDhalfmovie'
+    calculate = 'PSDmovie'
 end
 
 % initialize base path and toolbox
@@ -36,6 +36,11 @@ ROIAtlas = {'fsAnatomyMacro.nii','fsAnatomyMacro.nii','fsAnatomyMacro.nii','fsAn
     'fsAnatomyMacro.nii','fsAnatomyMacro.nii','fsAnatomyMacro.nii','BA44.nii','PFt.nii'};
 ROIText = {'Precentral','SuperiorOccipitalGyrus','MiddleOccipitalGyrus',...
     'InferiorOccipitalGyrus','SuperiorParietalLobe','InferiorParietalLobe','SupraMarginal','BA44','PFt'};
+
+% Region of Interest include:
+% ROIIndex = {[1,2,51,52,63,64]};
+% ROIAtlas = {'fsAnatomyMacro.nii'};
+% ROIText = {'PreCG&SMG&MOG'};
 
 % Anatomy20 ROIS
 % ROIIndex = {[198],[209],[128],[181],[135]};
@@ -771,6 +776,12 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
                 continue
             end
             
+%             cfg = [];
+%             cfg.channel = ROIelec;
+%             rerefData = ft_selectdata(cfg,rerefData);
+%             save([dataPath subname 'LARER_rerefDataInROI.mat'],'rerefData')
+%             continue
+            
             if exist([dataPath subname '_eventdata.mat'],'file')
                 a = load([dataPath subname '_eventdata']);
             end
@@ -885,8 +896,8 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
             
             nelec = nelec+numel(ROIelec);
         end
-
-              %% section3-4: calculate power spectrum difference of first and second half movie %%
+        
+        %% section3-4: calculate power spectrum difference of first and second half movie %%
         %%%%%%%%%%%%%%%%%%%%%%%%
         if strcmp(calculate,'PSDhalfmovie')
             
@@ -934,9 +945,9 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
             end
             
             % select events for Intact  condition
-%             camInfo = camInfo(cell2mat(camInfo(:,1))==0,:);
+            %             camInfo = camInfo(cell2mat(camInfo(:,1))==0,:);
             
-                        % select events for Scrambled  condition
+            % select events for Scrambled  condition
             camInfo = camInfo(cell2mat(camInfo(:,1))==1,:);
             
             % time-frequency decomposition (multi-taper)
@@ -1895,13 +1906,13 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
                     tmpseedTS = seedTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                     tmpsearchTS = searchTS(:,camInfo{ii,4}:camInfo{ii,4}+fs*(camInfo{ii,7}-camInfo{ii,5}));
                     
-%                     [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
-%                     cfcdata(ii,:,:) = mvldata;
+                    %                     [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                    %                     cfcdata(ii,:,:) = mvldata;
                     
                     [aacdata] = find_aac(tmpseedTS,tmpsearchTS);
                     cfcdata(ii,:,:) = aacdata;
-
-
+                    
+                    
                 end
                 % separate data according to condition
                 elecPACM = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
@@ -1921,12 +1932,12 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
                         randTime = randsample(size(tmpsearchTS,2),1);
                         tmpsearchTS = [tmpsearchTS(:,randTime:end),tmpsearchTS(:,1:randTime-1)];
                         
-%                         [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
-%                         cfcdata(ii,:,:) = mvldata;
+                        %                         [mvldata] = data2mvl(tmpseedTS,tmpsearchTS);
+                        %                         cfcdata(ii,:,:) = mvldata;
                         
                         [aacdata] = find_aac(tmpseedTS,tmpsearchTS);
                         cfcdata(ii,:,:) = aacdata;
-                    
+                        
                     end
                     % separate data according to condition
                     shfPACM(ishf,:,:) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==0,:,:),1));
@@ -1978,7 +1989,7 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
             c = fieldnames(a);
             rerefData = a.(c{1});
             
-
+            
             % choose ROI electrodes according to MNI coordinates
             elecposMNI = rerefData.elec.elecposMNI;
             tempdev = pdist2(elecposMNI,aparc_coordiantes);
@@ -1994,7 +2005,7 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
                 continue
             end
             
-                        a = load(['C:\Users\qin2\Documents\ActionPredictionECoG\Results\' ...
+            a = load(['C:\Users\qin2\Documents\ActionPredictionECoG\Results\' ...
                 'PSDmovie\fsAnatomyMacro1&5taperFixwinER' filesep ROIText{iatlas}]);
             
             allMetric = cat(1,a.allMetricM,a.allMetricS);
@@ -2030,15 +2041,15 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
             camInfo(:,4) = num2cell(round(cell2mat(camInfo(:,4))./1000.*fs));
             
             %%%%---- calculate PAC ---- %%%%
-%             cfg              = [];
-%             cfg.channel = ROIelec;
-%             cfg.output       = 'fourier';
-%             cfg.method       = 'hilbert';
-%             cfg.foi          = mean([betaPeakM,betaPeakS]);
-%             cfg.width        =  inpara(1);
-%             cfg.toi          = 'all'; %'all';
-%             cfg.keeptrials   = 'yes';
-                        cfg            = [];
+            %             cfg              = [];
+            %             cfg.channel = ROIelec;
+            %             cfg.output       = 'fourier';
+            %             cfg.method       = 'hilbert';
+            %             cfg.foi          = mean([betaPeakM,betaPeakS]);
+            %             cfg.width        =  inpara(1);
+            %             cfg.toi          = 'all'; %'all';
+            %             cfg.keeptrials   = 'yes';
+            cfg            = [];
             cfg.output     = 'fourier';
             cfg.method     = 'mtmconvol';
             cfg.channel = ROIelec;
@@ -2047,19 +2058,19 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
             cfg.taper = 'hanning';
             cfg.t_ftimwin = 2./cfg.foi;
             cfg.keeptrials = 'yes';
-
+            
             ft_warning off
             freqLow    = ft_freqanalysis(cfg, rerefData);
             
-%             cfg              = [];
-%             cfg.channel = ROIelec;
-%             cfg.output       = 'fourier';
-%             cfg.method       = 'hilbert';
-%             cfg.foi          = mean([gammaPeakM,gammaPeakS]);
-%             cfg.width        =  inpara(2);
-%             cfg.toi          = 'all'; %'all';
-%             cfg.keeptrials   = 'yes';            
-                                    cfg            = [];
+            %             cfg              = [];
+            %             cfg.channel = ROIelec;
+            %             cfg.output       = 'fourier';
+            %             cfg.method       = 'hilbert';
+            %             cfg.foi          = mean([gammaPeakM,gammaPeakS]);
+            %             cfg.width        =  inpara(2);
+            %             cfg.toi          = 'all'; %'all';
+            %             cfg.keeptrials   = 'yes';
+            cfg            = [];
             cfg.output     = 'fourier';
             cfg.method     = 'mtmconvol';
             cfg.channel = ROIelec;
@@ -2128,10 +2139,10 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
                     shfPACS(ishf) = abs(mean(cfcdata(cell2mat(camInfo(:,1))==1)));
                 end
                 
-                                allPACM(ip) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
-                                allPACS(ip)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
-%                 allPACM(ip) = elecPACM;
-%                 allPACS(ip)  = elecPACS;
+                allPACM(ip) = (elecPACM-mean(shfPACM,1))./std(shfPACM,0,1);
+                allPACS(ip)  = (elecPACS-mean(shfPACS,1))./std(shfPACS,0,1);
+                %                 allPACM(ip) = elecPACM;
+                %                 allPACS(ip)  = elecPACS;
                 
             end
             
@@ -2241,6 +2252,8 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
         pMap = zeros(1,size(allMetricM,2));
         y2plot = zeros(2,size(allMetricM,2));
         se2plot = zeros(2,size(allMetricM,2));
+        y2plotDB = zeros(2,size(allMetricM,2));
+        se2plotDB = zeros(2,size(allMetricM,2));
         yraw = zeros(2,size(allMetricM,2));
         seraw = zeros(2,size(allMetricM,2));
         
@@ -2286,6 +2299,8 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
             obsVal2 = Ycorr(lmeTBL.Cond=='2');
             y2plot(:,itime) = [mean(obsVal1);mean(obsVal2)];
             se2plot(:,itime) = [std(obsVal1)./sqrt(numel(obsVal1));std(obsVal2)./sqrt(numel(obsVal2))];
+            y2plotDB(:,itime) = [mean(db(obsVal1));mean(db(obsVal2))];
+            se2plotDB(:,itime) = [std(db(obsVal1))./sqrt(numel(db(obsVal1)));std(db(obsVal2))./sqrt(numel(db(obsVal2)))];
             rawVal1 = lmeTBL.Y(lmeTBL.Cond=='1');
             rawVal2 = lmeTBL.Y(lmeTBL.Cond=='2');
             yraw(:,itime) = [mean(rawVal1);mean(rawVal2)];
@@ -2296,7 +2311,7 @@ for iatlas = [1,3,7] %1:numel(ROIIndex) %[1,3,7,8,9]
             mkdir([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4)])
         end
         save([resultPath calculate filesep ROIAtlas{iatlas}(1:end-4) filesep ROIText{iatlas}], ...
-            'allMetricM','allMetricS','lmeTBL','tMap','pMap','y2plot','se2plot','yraw','seraw','Para');
+            'allMetricM','allMetricS','lmeTBL','tMap','pMap','y2plot','se2plot','y2plotDB','se2plotDB','yraw','seraw','Para');
         
         
     end
